@@ -1,0 +1,15 @@
+---
+# task definition config params
+object_list:
+  - "silver pot"
+  - "mushroom"
+  - "green spoon"
+task_list:
+  - "put mushroom into the silver pot"
+  - "remove mushroom from inside the silver pot and place it on the table"
+  - "put the green spoon into the silver pot"
+  - "remove the green spoon from inside the silver pot and place it on the table"
+  - "move green spoon to the right side of the table"
+  - "move green spoon to the left side of the table"
+  - "move mushroom to the right side of the table"
+  - "move mushroom to the left side of the table"

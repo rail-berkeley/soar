@@ -1,0 +1,3 @@
+---
+# Config parameters of success detector
+which_vlm: "cogvlm" # choices: "cogvlm", "gpt4v", "none"

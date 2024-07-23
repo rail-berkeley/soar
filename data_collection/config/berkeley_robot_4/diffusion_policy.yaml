@@ -1,0 +1,103 @@
+---
+# Config parameters of low-level goal conditioned policy
+policy_class: "gc_ddpm_bc"
+checkpoint_path: "checkpoints/red_object_metal_pot/dgcbc_95_4p5_0p5_successes_1800000" # iterated_dgcbc_80_20_230000
+mini_dataset_path: "mini_dataset"
+image_size: 256
+rollout_timesteps: 25
+exploration:
+  make_traj_deterministic_prob: 1.0
+  sampling_temperature: 2.0
+  gripper_open_prob: 0.01
+  gripper_close_prob: 0.02
+exploration_noise: 0.000
+dataset_kwargs:
+  shuffle_buffer_size: 25000
+  augment: true
+  augment_next_obs_goal_differently: false
+  augment_kwargs:
+    random_resized_crop:
+      scale:
+        - 0.8
+        - 1.0
+      ratio:
+        - 0.9
+        - 1.1
+    random_brightness:
+      - 0.2
+    random_contrast:
+      - 0.8
+      - 1.2
+    random_saturation:
+      - 0.8
+      - 1.2
+    random_hue:
+      - 0.1
+    augment_order:
+      - "random_resized_crop"
+      - "random_brightness"
+      - "random_contrast"
+      - "random_saturation"
+      - "random_hue"
+  goal_relabeling_strategy: "geometric"
+  goal_relabeling_kwargs:
+    reached_proportion: 0.0
+    discount: 0.98
+  relabel_actions: true
+  act_pred_horizon: 4
+  obs_horizon: 1
+ACT_MEAN:
+  - 1.9296819e-04
+  - 1.3667766e-04
+  - -1.4583133e-04
+  - -1.8390431e-04
+  - -3.0808983e-04
+  - 2.7425270e-04
+  - 5.9716219e-01
+ACT_STD:
+  - 0.00912848
+  - 0.0127196
+  - 0.01229497
+  - 0.02606696
+  - 0.02875283
+  - 0.07807977
+  - 0.48710242
+PROPRIO_MEAN:
+  - 0.29730073
+  - 0.02986212
+  - 0.06420159
+  - -0.00201155
+  - -0.07586625
+  - 0.159071
+  - 0.75686556
+PROPRIO_STD:
+  - 0.05918062
+  - 0.09581848
+  - 0.05275392
+  - 0.13922517
+  - 0.16974117
+  - 0.6555491
+  - 0.3397966
+agent_kwargs:
+  score_network_kwargs:
+    time_dim: 32
+    num_blocks: 3
+    dropout_rate: 0.1
+    hidden_dim: 256
+    use_layer_norm: true
+  early_goal_concat: true
+  shared_goal_encoder: true
+  use_proprio: false
+  beta_schedule: "cosine"
+  diffusion_steps: 20
+  action_samples: 1
+  repeat_last_step: 0
+  learning_rate: 3.0e-4
+  warmup_steps: 2000
+  actor_decay_steps: 2000000
+encoder:
+  type: "resnetv1-34-bridge"
+  config:
+    act: "swish"
+    add_spatial_coordinates: true
+    pooling_method: "avg"

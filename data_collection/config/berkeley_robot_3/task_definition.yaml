@@ -1,0 +1,20 @@
+---
+# task definition config params
+object_list:
+  - "carrot"
+  - "lemon"
+  - "purple eggplant"
+  - "blue tray"
+task_list:
+  - "remove the lemon from the blue tray and put it on the table"
+  - "move the carrot to the right side"
+  - "move the carrot to the left side"
+  - "put the purple eggplant on the blue tray"
+  - "put the lemon on the blue tray"
+  - "remove the carrot from the blue tray and put it on the table"
+  - "remove the purple eggplant from the blue tray and put it on the table"
+  - "put the carrot on the blue tray"
+
+
+# put the pink spoon on the blue tray
+# remove the pink spoon from the blue tray and put it on the table

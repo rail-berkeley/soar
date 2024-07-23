@@ -1,0 +1,3 @@
+# CogVLM server config parameters
+cogvlm_server_ip: "localhost"
+cogvlm_server_port: 6000

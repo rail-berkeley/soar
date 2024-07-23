@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Feeds</title>
+    <style>
+        body, html {
+            margin: 0;
+            height: 100%;
+            overflow: auto;
+            background: white;
+        }
+        .video-feeds-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-items: flex-start;
+        }
+        .video-feed-pair {
+            position: relative;
+            margin: 2em;
+            background: #f2bbb200;
+            padding-left: 2em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .feed-label {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1.5em; /* Width of the label */
+            height: 100%;
+            background-color: #3b404af7; /* Same as the header background color */
+            color: white;
+            writing-mode: vertical-lr; /* Rotate the text */
+            text-orientation: sideways;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            transform: rotate(-180deg); /* Correct orientation of the text */
+        }
+        .video-feed-pair .video-feed-container {
+            display: flex;
+            justify-content: center; /* centers the pair horizontally within the container */
+        }
+        .video-feed {
+            width: calc(50%);
+            background: #3b404af7;
+            display: flex;
+            flex-direction: column;
+        }
+        .video-feed label {
+            text-align: center;
+            margin-bottom: 0.1em;
+            font-size: 1.5em;
+            color: white;
+        }
+        .video-feed img {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+        .status-info-container {
+            display: flex;
+            justify-content: center; /* centers the pair horizontally within the container */
+            padding-left: 1em;
+            padding-top: 0.6em;
+            padding-bottom: 0.6em;
+            padding-right: 1em;
+        }
+        .status-info {
+            width: 100%;
+            padding-top: 0.5em;
+            padding-bottom: 0em;
+            background: #3b404a24;
+            text-align: center;
+            line-height: 0.8;
+        }
+        .status-info .status-item {
+            margin-bottom: 0.5em;
+        }
+        .label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="video-feeds-wrapper">
+
+        <!-- We use a loop in JavaScript to generate the mark-up for all feeds,
+             so here we only need to allocate a container for them. -->
+        <div id="video-feeds-container"></div>
+        
+    </div>
+
+    <script>
+        function fetchAndDisplayImage(feedId, imageType) {
+            const imgElement = document.getElementById(`${feedId}-${imageType}-img`);
+            fetch(`/images/${feedId}/${imageType}`)
+                .then(response => response.blob())
+                .then(imageBlob => {
+                    const imageUrl = URL.createObjectURL(imageBlob);
+                    imgElement.src = imageUrl;
+                })
+                .catch(error => console.error(`Error fetching ${feedId}-${imageType} image:`, error));
+        }
+
+        function fetchStatus(feedId) {
+            fetch(`/get_status_data/${feedId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById(`${feedId}-commanded-task`).textContent = data.commanded_task;
+                    document.getElementById(`${feedId}-subgoal`).textContent = data.subgoal;
+                    document.getElementById(`${feedId}-timestep`).textContent = data.timestep;
+                    document.getElementById(`${feedId}-task-success`).textContent = data.task_success;
+                })
+                .catch(error => console.error(`Error fetching status for ${feedId}:`, error));
+        }
+
+        function createVideoFeedPairHtml(feedId) {
+            return `
+                <div class="video-feed-pair">
+                    <div class="feed-label">WidowX #${parseInt(feedId) + 1}</div> <!-- Add this label for feed number -->
+                    <div class="video-feed-container">
+                        <div class="video-feed" id="${feedId}-observation-feed">
+                            <label>Observations</label>
+                            <img src="" alt="Observation Feed" id="${feedId}-observation-img">
+                        </div>
+                        <div class="video-feed" id="${feedId}-goal-feed">
+                            <label>Goals</label>
+                            <img src="" alt="Goal Feed" id="${feedId}-goal-img">
+                        </div>
+                    </div>
+                    <div class="status-info-container">
+                        <div class="status-info">
+                            <div class="status-item"><span class="label">Commanded task:</span> <span id="${feedId}-commanded-task"></span></div>
+                            <div class="status-item"><span class="label">Currently on subgoal:</span> <span id="${feedId}-subgoal"></span></div>
+                            <div class="status-item"><span class="label">Timestep:</span> <span id="${feedId}-timestep"></span></div>
+                            <div class="status-item"><span class="label">Task succeeded?:</span> <span id="${feedId}-task-success"></span></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initializeVideoFeeds() {
+            const container = document.getElementById("video-feeds-container");
+            for(let i = 0; i < 8; i++) {
+                const feedId = `${i}`;
+                container.innerHTML += createVideoFeedPairHtml(feedId);
+            }
+        }
+
+        function updateAllFeeds() {
+            for(let i = 0; i < 8; i++) {
+                const feedId = `${i}`;
+                fetchAndDisplayImage(feedId, 'observation');
+                fetchAndDisplayImage(feedId, 'goal');
+                fetchStatus(feedId);
+            }
+        }
+
+        // Initialize video feeds on document ready
+        document.addEventListener("DOMContentLoaded", initializeVideoFeeds);
+
+        // Regularly fetching the latest images for all feeds
+        setInterval(updateAllFeeds, 1000);  // Update every 1 second
+
+    </script>
+</body>
+</html>

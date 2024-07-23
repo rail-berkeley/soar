@@ -1,0 +1,92 @@
+---
+# Config parameters of low-level goal conditioned policy
+policy_class: "gc_bc"
+checkpoint_path: "checkpoints/gcbc_just_bridge_vision_backbone_1_200000"
+mini_dataset_path: "mini_dataset"
+image_size: 256
+rollout_timesteps: 20
+exploration:
+  make_traj_deterministic_prob: 0.5
+  sampling_temperature: 0.2
+  gripper_open_prob: 0.005
+  gripper_close_prob: 0.01
+open_gripper_if_nothing_grasped: false
+restrict_action_space: false
+dataset_kwargs:
+  shuffle_buffer_size: 25000
+  augment: true
+  augment_next_obs_goal_differently: false
+  augment_kwargs:
+    random_resized_crop:
+      scale:
+        - 0.8
+        - 1.0
+      ratio:
+        - 0.9
+        - 1.1
+    random_brightness:
+      - 0.2
+    random_contrast:
+      - 0.8
+      - 1.2
+    random_saturation:
+      - 0.8
+      - 1.2
+    random_hue:
+      - 0.1
+    augment_order:
+      - "random_resized_crop"
+      - "random_brightness"
+      - "random_contrast"
+      - "random_saturation"
+      - "random_hue"
+  goal_relabeling_strategy: "geometric"
+  goal_relabeling_kwargs:
+    reached_proportion: 0.0
+    discount: 0.98
+  relabel_actions: true
+  dataset_contains_commanded_goals: false
+  normalization_type: "normal"
+ACT_MEAN:
+  - 1.9296819e-04
+  - 1.3667766e-04
+  - -1.4583133e-04
+  - -1.8390431e-04
+  - -3.0808983e-04
+  - 2.7425270e-04
+  - 5.9716219e-01
+ACT_STD:
+  - 0.00912848
+  - 0.0127196
+  - 0.01229497
+  - 0.02606696
+  - 0.02875283
+  - 0.07807977
+  - 0.48710242
+agent_kwargs:
+  policy_kwargs:
+    fixed_std:
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 0.1
+    std_parameterization: "fixed"
+    tanh_squash_distribution: false
+  early_goal_concat: true
+  shared_goal_encoder: true
+  use_proprio: false
+  network_kwargs:
+    hidden_dims:
+      - 256
+      - 256
+      - 256
+    dropout_rate: 0.1
+encoder:
+  type: "resnetv1-34-bridge"
+  config:
+    act: "swish"
+    add_spatial_coordinates: false
+    pooling_method: "avg"

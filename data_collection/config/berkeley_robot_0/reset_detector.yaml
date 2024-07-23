@@ -1,0 +1,5 @@
+---
+# Reset detector config params
+slack_token: <must be set by the user>
+channel_id: <must be set by the user>
+which_vlm: "cogvlm" # choices: "cogvlm", "gpt4v", "none"

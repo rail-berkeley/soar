@@ -1,0 +1,12 @@
+---
+# Config parameters of high-level subgoal predictor policy
+diffusion_checkpoint: "kvablack/susie"
+diffusion_wandb: "kvablack/dlimp-diffusion/9n9ped8m"
+diffusion_pretrained_path: "runwayml/stable-diffusion-v1-5:flax"
+diffusion_num_steps: 50
+prompt_w: 7.5
+context_w: 5.0
+image_size: 256
+max_subgoals: 5
+susie_server_ip: "localhost"
+susie_server_port: 7000

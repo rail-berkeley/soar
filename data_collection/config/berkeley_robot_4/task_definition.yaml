@@ -1,0 +1,7 @@
+---
+# task definition config params
+object_list:
+  - "drawer"
+task_list:
+  - "open the drawer"
+  - "close the drawer"

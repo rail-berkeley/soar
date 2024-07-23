@@ -1,0 +1,11 @@
+---
+general_params: !include general_params.yaml
+task_proposer_params: !include task_proposer.yaml
+gc_policy_params: !include iql_policy.yaml
+subgoal_predictor_params: !include subgoal_predictor.yaml
+rlds_params: !include rlds.yaml
+checkpoint_sync_params: !include checkpoint_synchronization.yaml
+reset_detector_params: !include reset_detector.yaml
+success_detector_params: !include success_detector.yaml
+cogvlm_server_params: !include cogvlm_server.yaml
+task_definition_params: !include task_definition.yaml

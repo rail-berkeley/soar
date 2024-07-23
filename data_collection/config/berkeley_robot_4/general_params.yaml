@@ -1,0 +1,51 @@
+---
+# IP address and port of the robot
+ip: "128.32.175.227"
+port: 5556
+
+# IP address of web viewer
+web_viewer_ip: "128.32.175.81"
+web_viewer_port: 5000
+
+# Robot ID
+robot_id: 4
+
+# General config parameters
+sticky_gripper_num_steps: 1 # I'm thinking that for online improvement, we should turn off sticky gripper
+joints_reboot_interval: 1
+env_params:
+  camera_topics:
+    - name: "/blue/image_raw"
+      flip: false
+  override_workspace_boundaries:
+    - - -20.0
+      - -20.0
+      - -20.0
+      - -1.57
+      - 0
+    - - 20.0
+      - 20.0
+      - 20.0
+      - 1.57
+      - 0
+  move_duration: 0.3
+video_save_path: "data_collection_logs/berkeley_robot_4/drawer_iql"
+shoulder_camera_image_size: 256 # size of image returned by shoulder cam
+initial_eep:
+  - 0.3
+  - 0.0
+  - 0.15
+  - 0
+  - 0
+  - 0
+  - 1
+manual_workspace_bounds:
+  x:
+    - 0.22816383
+    - 0.40895109
+  y:
+    - -0.11804535
+    - 0.04906207
+  z:
+    - 0.04494154
+    - 0.13566369

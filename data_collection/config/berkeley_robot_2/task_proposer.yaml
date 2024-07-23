@@ -1,0 +1,7 @@
+---
+# Config parameters of task proposer
+reuse_task_statistics: false
+rand_selection_prob: 1.0
+zone_center: 0.3
+ucb_weight: 5.0
+which_vlm: "cogvlm" # choices: "cogvlm", "gpt4v", "none", "human"
