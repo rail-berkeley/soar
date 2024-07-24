@@ -2,10 +2,10 @@ import requests
 from pathlib import Path
 
 # Your Flask API endpoint URL
-url = 'http://localhost:5001/query'  # We're testing out ssh port forwarding
+url = "http://localhost:5001/query"  # We're testing out ssh port forwarding
 
-image_path = 'test-img.png'
-prompt_text = 'Describe the image.'
+image_path = "test-img.png"
+prompt_text = "Describe the image."
 
 # Make sure the image path is valid
 if not Path(image_path).is_file():
@@ -13,14 +13,10 @@ if not Path(image_path).is_file():
     exit()
 
 # Open the image in binary mode
-with open(image_path, 'rb') as image_file:
+with open(image_path, "rb") as image_file:
     # Prepare the data for the POST request
-    payload = {
-        'prompt': (None, prompt_text)
-    }
-    files = {
-        'image': (image_path, image_file, 'multipart/form-data')
-    }
+    payload = {"prompt": (None, prompt_text)}
+    files = {"image": (image_path, image_file, "multipart/form-data")}
 
     # Send the POST request to the Flask API endpoint
     response = requests.post(url, files=files, data=payload)

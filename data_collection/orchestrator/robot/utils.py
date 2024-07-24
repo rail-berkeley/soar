@@ -11,6 +11,7 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Pool
 
+
 def state_to_eep(xyz_coor, zangle: float):
     """
     Implement the state to eep function.
@@ -38,11 +39,16 @@ def get_observation(widowx_client, config):
             break
     obs["image"] = (
         obs["image"]
-        .reshape(3, config["general_params"]["shoulder_camera_image_size"], config["general_params"]["shoulder_camera_image_size"])
+        .reshape(
+            3,
+            config["general_params"]["shoulder_camera_image_size"],
+            config["general_params"]["shoulder_camera_image_size"],
+        )
         .transpose(1, 2, 0)
         * 255
     ).astype(np.uint8)
     return obs
+
 
 def encode_image_np(image_np: np.ndarray):
     # Ensure the NumPy array is in uint8
@@ -55,8 +61,9 @@ def encode_image_np(image_np: np.ndarray):
     # Save the image to the buffer in PNG format (or JPEG or any other format)
     pil_image.save(buffer, format="PNG")
     # Encode the buffer's content in base64
-    base64_encoded = base64.b64encode(buffer.getvalue()).decode('utf-8')
+    base64_encoded = base64.b64encode(buffer.getvalue()).decode("utf-8")
     return base64_encoded
+
 
 def ask_gpt4v(image: np.ndarray, prompt: str):
     # We will first resize the image to 512x512
@@ -68,44 +75,43 @@ def ask_gpt4v(image: np.ndarray, prompt: str):
     # Prepare jsons for openai api requests
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"
+        "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
     }
     payload = {
-        "model": "gpt-4-turbo", # gpt4o
+        "model": "gpt-4-turbo",  # gpt4o
         "messages": [
             {
                 "role": "user",
                 "content": [
-                    {
-                        "type": "text",
-                        "text": "###############"
-                    },
+                    {"type": "text", "text": "###############"},
                     {
                         "type": "image_url",
-                        "image_url": {
-                            "url": "###############",
-                            "detail": "low"
-                        }
+                        "image_url": {"url": "###############", "detail": "low"},
                     },
-                ]
+                ],
             }
         ],
         "max_tokens": 2000,
-        "temperature": 0.0
+        "temperature": 0.0,
     }
 
     base64_image = encode_image_np(image)
-    payload["messages"][0]["content"][1]["image_url"]["url"] = f"data:image/jpeg;base64,{base64_image}"
+    payload["messages"][0]["content"][1]["image_url"][
+        "url"
+    ] = f"data:image/jpeg;base64,{base64_image}"
     payload["messages"][0]["content"][0]["text"] = prompt
 
     while True:
-        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload).json()
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions", headers=headers, json=payload
+        ).json()
         if "error" in response:
             continue
         assistant_message = response["choices"][0]["message"]["content"]
         break
 
     return assistant_message
+
 
 def ask_gpt4v_batched(images: List[np.ndarray], prompts: List[str]):
     assert len(images) == len(prompts)
@@ -118,18 +124,19 @@ def ask_gpt4v_batched(images: List[np.ndarray], prompts: List[str]):
 
     return assistant_messages
 
+
 def ask_gpt4(prompt, cache=None):
     if type(prompt) == tuple:
         prompt, cache = prompt
-        
+
     # check if cache contains the answer
     if cache is not None and prompt in cache:
         return cache[prompt]
-    
+
     # Prepare jsons for openai api requests
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"
+        "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
     }
     payload = {
         "model": "gpt-3.5-turbo-1106",
@@ -137,21 +144,22 @@ def ask_gpt4(prompt, cache=None):
             {
                 "role": "user",
                 "content": [
-                    {
-                        "type": "text",
-                        "text": "###############"
-                    },
-                ]
+                    {"type": "text", "text": "###############"},
+                ],
             }
         ],
         "max_tokens": 2000,
-        "temperature": 0.0
+        "temperature": 0.0,
     }
 
     payload["messages"][0]["content"][0]["text"] = prompt
     while True:
         try:
-            response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload).json()
+            response = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                json=payload,
+            ).json()
         except:
             # sometime we get requests.exceptions.JSONDecodeError
             continue
@@ -161,6 +169,7 @@ def ask_gpt4(prompt, cache=None):
         break
 
     return assistant_message
+
 
 def ask_gpt4_batched(prompts, cache=None):
     if prompts is None or len(prompts) == 0:
@@ -172,15 +181,18 @@ def ask_gpt4_batched(prompts, cache=None):
         assistant_messages = p.map(ask_gpt4, prompts)
     return assistant_messages
 
-#def ask_gpt4_batched(prompts):
+
+# def ask_gpt4_batched(prompts):
 #    assistant_messages = []
 #    for prompt in tqdm(prompts):
 #        assistant_messages.append(ask_gpt4(prompt))
 #    return assistant_messages
 
+
 def ask_cogvlm(image: np.ndarray, prompt: str, config):
     image_list, prompt_list = [image], [prompt]
     return ask_cogvlm_batched(image_list, prompt_list, config)[0]
+
 
 def ask_cogvlm_batched(images: List[np.ndarray], prompts: List[str], config):
 
@@ -189,18 +201,24 @@ def ask_cogvlm_batched(images: List[np.ndarray], prompts: List[str], config):
 
         files = []
         for i, (numpy_image, prompt) in enumerate(zip(images, prompts)):
-            pil_image = Image.fromarray(numpy_image.astype('uint8'))
+            pil_image = Image.fromarray(numpy_image.astype("uint8"))
             img_byte_arr = io.BytesIO()
-            pil_image.save(img_byte_arr, format='PNG')  # can be JPEG or other formats
+            pil_image.save(img_byte_arr, format="PNG")  # can be JPEG or other formats
             img_byte_arr.seek(0)
 
             # Append the image file
-            files.append(('image', (f'image_{i}.png', img_byte_arr, 'image/png')))
+            files.append(("image", (f"image_{i}.png", img_byte_arr, "image/png")))
 
             # Append the corresponding prompt
-            files.append((f'prompt', (None, prompt)))
+            files.append((f"prompt", (None, prompt)))
 
-        url = "http://" + config["cogvlm_server_params"]["cogvlm_server_ip"] + ":" + str(config["cogvlm_server_params"]["cogvlm_server_port"]) + "/query"
+        url = (
+            "http://"
+            + config["cogvlm_server_params"]["cogvlm_server_ip"]
+            + ":"
+            + str(config["cogvlm_server_params"]["cogvlm_server_port"])
+            + "/query"
+        )
         response = requests.post(url, files=files)
 
         return response.json()["response"]
@@ -212,5 +230,5 @@ def ask_cogvlm_batched(images: List[np.ndarray], prompts: List[str], config):
             break
         except:
             continue
-    
+
     return response

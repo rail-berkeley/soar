@@ -1,8 +1,11 @@
 import os
 from ml_collections import ConfigDict
 
-from jaxrl_m.agents.continuous.cql import get_default_config as get_continuous_cql_config
+from jaxrl_m.agents.continuous.cql import (
+    get_default_config as get_continuous_cql_config,
+)
 from jaxrl_m.agents.discrete.cql import get_default_config as get_discrete_cql_config
+
 
 def get_config(config_string):
     base_real_config = dict(
@@ -51,8 +54,8 @@ def get_config(config_string):
                         ),
                         distributional_critic=False,
                         distributional_critic_kwargs={
-                            "q_min": -50.,
-                            "q_max": 0.,
+                            "q_min": -50.0,
+                            "q_max": 0.0,
                             "num_bins": 64,
                         },
                         critic_network_type="ptr_critic",
@@ -84,7 +87,7 @@ def get_config(config_string):
                         },
                         early_goal_concat=True,
                         goal_conditioned=True,
-                        gc_kwargs = {
+                        gc_kwargs={
                             "negative_proportion": 0.3,
                         },
                         shared_goal_encoder=True,
@@ -105,10 +108,7 @@ def get_config(config_string):
                 ).to_dict(),
                 dataset_kwargs=dict(
                     goal_relabeling_strategy="geometric",
-                    goal_relabeling_kwargs=dict(
-                        reached_proportion=0.2,
-                        discount=0.98
-                    ),
+                    goal_relabeling_kwargs=dict(reached_proportion=0.2, discount=0.98),
                     normalization_type="tanh",
                     dataset_contains_commanded_goals=False,
                     action_clip_delta=0.001,
@@ -129,7 +129,6 @@ def get_config(config_string):
                 #         ),
                 #     )
                 # ],
-
                 # pretrained_loaders=[
                 #     (
                 #         "bigvision_resnet_gc",
@@ -140,19 +139,22 @@ def get_config(config_string):
                 #         ),
                 #     )
                 # ],
-
                 # encoder="resnetv2-50-1",
                 # encoder_kwargs=dict(),
                 **base_real_config,
             )
         ),
-
         "gc_bc_offline_bridge": ConfigDict(
             dict(
                 agent="gc_bc",
                 agent_kwargs=dict(
                     network_kwargs=dict(
-                        hidden_dims=(256, 256, 256, 256),  # diff: bridge release use 3 * 256
+                        hidden_dims=(
+                            256,
+                            256,
+                            256,
+                            256,
+                        ),  # diff: bridge release use 3 * 256
                         dropout_rate=0,  # diff: bridge release use 0.1
                     ),
                     policy_kwargs=dict(
@@ -169,10 +171,7 @@ def get_config(config_string):
                 ),
                 dataset_kwargs=dict(
                     goal_relabeling_strategy="geometric",
-                    goal_relabeling_kwargs=dict(
-                        reached_proportion=0.0,
-                        discount=0.98
-                    ),
+                    goal_relabeling_kwargs=dict(reached_proportion=0.0, discount=0.98),
                     normalization_type="tanh_normal",
                     dataset_contains_commanded_goals=False,
                     **base_data_config,

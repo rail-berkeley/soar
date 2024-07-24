@@ -6,6 +6,7 @@ import os
 import subprocess
 import json
 
+
 class Logger:
     def __init__(self, config):
         self.robot_id = str(config["general_params"]["robot_id"])
@@ -64,14 +65,16 @@ class Logger:
         """
         assert pose.shape == (7,), "Robot pose should have 7 dimensions"
         self.poses.append(pose)
-    
+
     def reset(self):
         self.obs_images = []
         self.goal_images = []
         self.actions = []
         self.poses = []
 
-    def flush_trajectory(self, commanded_task: str, success: bool, log_combined: bool = True):
+    def flush_trajectory(
+        self, commanded_task: str, success: bool, log_combined: bool = True
+    ):
         subdir_path = os.path.join(self.video_save_path, "traj" + str(self.traj_idx))
         if not os.path.exists(subdir_path):
             os.makedirs(subdir_path)

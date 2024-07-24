@@ -203,7 +203,7 @@ def geometric(traj, *, reached_proportion, commanded_goal_proportion=-1.0, disco
     return traj
 
 
-def delta_goals(traj, *, goal_delta, discount = 0.99):
+def delta_goals(traj, *, goal_delta, discount=0.99):
     """
     Relabels with a uniform distribution over future states in the range [i +
     goal_delta[0], min{traj_len, i + goal_delta[1]}). Truncates trajectories to
@@ -233,7 +233,7 @@ def delta_goals(traj, *, goal_delta, discount = 0.99):
     goal_idxs = tf.minimum(goal_idxs, all_obs_len - 1)
 
     # it doesn't make sense to sample the current state as the goal
-    # this operation also slightly upweights sampling of the next state as the goal, 
+    # this operation also slightly upweights sampling of the next state as the goal,
     # which is good for RL
     goal_idxs = tf.maximum(goal_idxs, curr_idxs + 1)
 
@@ -259,7 +259,14 @@ def delta_goals(traj, *, goal_delta, discount = 0.99):
     traj_truncated["masks"] = tf.where(goal_is_next_obs_mask, 0.0, 1.0)
 
     # add mc_returns
-    traj_truncated["mc_returns"] = -1 * (tf.math.pow(discount, tf.cast(traj_truncated["goal_dists"] - 1, tf.float32)) - 1) / (discount - 1)
+    traj_truncated["mc_returns"] = (
+        -1
+        * (
+            tf.math.pow(discount, tf.cast(traj_truncated["goal_dists"] - 1, tf.float32))
+            - 1
+        )
+        / (discount - 1)
+    )
 
     return traj_truncated
 
