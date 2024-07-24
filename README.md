@@ -1,11 +1,11 @@
 # SOAR
-Code release for the paper "Autonomous Improvement of Instruction Following Skills via Foundation Models". 
+Code release for the paper "Autonomous Improvement of Instruction Following Skills via Foundation Models".
 
 This repository contains two components: (1) the VLM powered semantics-aware autonomous data collection pipeline, and (2) Jax/Flax code for training the policies used in the paper.
 
 ## (1) Autonomous Data Collection
 
-We provide a ready-to-use implementation of autonomous data collection on a fleet of WidowX robot arms. This data collection system is designed around deploying instruction following policies at scale to collect autonomous datasets that are semantically relevant, diverse, and large. Special care is taken to minimize human supervision during data collection, with features like automatic reset detection (and subsequent Slack notification). 
+We provide a ready-to-use implementation of autonomous data collection on a fleet of WidowX robot arms. This data collection system is designed around deploying instruction following policies at scale to collect autonomous datasets that are semantically relevant, diverse, and large. Special care is taken to minimize human supervision during data collection, with features like automatic reset detection (and subsequent Slack notification).
 
 ![](media/autonomous_data_collection.png)
 
@@ -27,7 +27,7 @@ We provide convenience scripts for testing that the VLM has been hosted correctl
 
 ### OpenAI API Key
 
-Make sure to specify your OpenAI API key as an environment variable with the name `OPENAI_API_KEY`. It is likely convenient to include this specification in your `.bashrc` file. 
+Make sure to specify your OpenAI API key as an environment variable with the name `OPENAI_API_KEY`. It is likely convenient to include this specification in your `.bashrc` file.
 
 ### SuSIE Server
 
@@ -35,17 +35,17 @@ Similar to the VLM server, you will need to host the SuSIE model on a machine ac
 
 ### Web Viewer
 
-To make it convenient to monitor your robots from anywhere, we include a Flask web server with a simple front-end displaying video streamed by your robots. It is mandatory to launch the web server. There are two parts to launching this web viewer: (1) launch the Flask server on a central machine, and (2) launch the data streaming RosPy script on each of your robots. 
+To make it convenient to monitor your robots from anywhere, we include a Flask web server with a simple front-end displaying video streamed by your robots. It is mandatory to launch the web server. There are two parts to launching this web viewer: (1) launch the Flask server on a central machine, and (2) launch the data streaming RosPy script on each of your robots.
 
-To launch the Flask web server, run `python app.py` from the directory `data_collection/orchestrator/web_viewer`. The default port for the web server is `5000`, which can be adjusted in the last line of the file `app.py`. 
+To launch the Flask web server, run `python app.py` from the directory `data_collection/orchestrator/web_viewer`. The default port for the web server is `5000`, which can be adjusted in the last line of the file `app.py`.
 
 Separately on your robot machine (the machine where you are running the docker container and action server from `bridge_data_robot`), launch the script `python orchestrator/web_viewer/ros_client/run_client.py --config_dir config/<robot_config_dir>` from the `data_collection` directory, making sure the specify the path to the appropriate configuration directory. This command should be run after the docker container and action server from `bridge_data_robot` have been launched (see the README in the `bridge_data_robot` repo for more instructions).
 
 ### Pre-data collection: Setting Workspace Boundaries for Robot
 
-The final step before launching data collection is to specify the workspace boundaries for your robot. Specifying workspace boundaries (as the dimensions of an invisible rectangular prism the end-effector is forced to stay inside of) helps with safe robot operation and minimizes the chances that the robot will do something requiring a manual environment reset. 
+The final step before launching data collection is to specify the workspace boundaries for your robot. Specifying workspace boundaries (as the dimensions of an invisible rectangular prism the end-effector is forced to stay inside of) helps with safe robot operation and minimizes the chances that the robot will do something requiring a manual environment reset.
 
-Run the script `python orchestrator/set_workspace_bounds/teleop.py --config_dir config/<robot_config_dir>` from the `data_collection` directory. This will instantiate a keyboard teleop script (the key controls of which will be printed once you run the script). You should then teleop the end-effector to the extremums of your workspace. Hitting `q` will terminate the script, and print out the minimum and maximim `x`, `y`, and `z` values defining the invisible rectangular prism boundary. You should enter these values in your robot `general_params` config file: `data_collection/config/<robot_config_dir>/general_params.yaml`. 
+Run the script `python orchestrator/set_workspace_bounds/teleop.py --config_dir config/<robot_config_dir>` from the `data_collection` directory. This will instantiate a keyboard teleop script (the key controls of which will be printed once you run the script). You should then teleop the end-effector to the extremums of your workspace. Hitting `q` will terminate the script, and print out the minimum and maximim `x`, `y`, and `z` values defining the invisible rectangular prism boundary. You should enter these values in your robot `general_params` config file: `data_collection/config/<robot_config_dir>/general_params.yaml`.
 
 ### Running the Robot
 
@@ -53,7 +53,13 @@ Finally you are ready to run autonomous data collection on the robot! Simply run
 ```
 python orchestrator/robot/main.py --config_dir config/<robot_config_dir>
 ```
-from the `data_collection` directory. The script `main.py` contains the code for iterating through the full autonomous data collection loop: querying the VLM for which task to command, querying the SuSIE server for a subgoal image, rolling out the policy, querying the VLM for success determination, and logging. You should be able to keep this script and the robot running for many hours at a time, potentially periodically resetting a fallen object in the robot's environment. 
+from the `data_collection` directory. The script `main.py` contains the code for iterating through the full autonomous data collection loop: querying the VLM for which task to command, querying the SuSIE server for a subgoal image, rolling out the policy, querying the VLM for success determination, and logging. You should be able to keep this script and the robot running for many hours at a time, potentially periodically resetting a fallen object in the robot's environment.
 
 ## Model Training
 
+## Contributing
+To enable code checks and auto-formatting, please install pre-commit hooks (run this in the root directory):
+```bash
+pre-commit install
+```
+The hooks should now run before every commit. If files are modified during the checks, you'll need to re-stage them and commit again.

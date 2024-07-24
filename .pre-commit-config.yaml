@@ -11,15 +11,20 @@ repos:
       - id: trailing-whitespace
       - id: detect-private-key
       - id: debug-statements
-        exclude: ^experiments/
+        exclude: ^model_training/experiments/
   - repo: https://github.com/psf/black
     rev: 22.10.0
     hooks:
       - id: black
-        exclude: ^experiments/
+        exclude: ^model_training/experiments/
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
     hooks:
       - id: isort
-        exclude: ^experiments/
-        args: ["--profile", "black", "--src", "jaxrl_m", "--src", "experiments"]
+        exclude: ^model_training/experiments/
+        args: [
+          "--profile", "black",
+          "--src", "model_training/jaxrl_m",
+          "--src", "model_training/experiments",
+          "--src", "data_collection/orchestrator",
+        ]
