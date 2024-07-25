@@ -9,7 +9,6 @@ from dataset_builder import MultiThreadedDatasetBuilder
 
 # we ignore the small amount of data that contains >4 views
 IMAGE_SIZE = (256, 256)
-DEPTH = 5
 TRAIN_PROPORTION = 1.0
 
 
@@ -253,8 +252,11 @@ class SOARDataset(MultiThreadedDatasetBuilder):
         return path, sample
 
     def _split_generators(self, dl_manager: tfds.download.DownloadManager):
-        # each path is a directory that contains dated directories
-        paths = glob.glob(os.path.join(dl_manager.manual_dir, *("*" * (DEPTH - 1))))
+        # this function assumes the data structure is organized as follows:
+        # manual_dir/robot_id/scene_id/policy_type/date/success/trajectory_{i}/*
+        # manual_dir/robot_id/scene_id/policy_type/date/failure/trajectory_{i}/*
+        DEPTH = 4  # the number of subdirectories before success/failure dirs
+        paths = glob.glob(os.path.join(dl_manager.manual_dir, *("*" * DEPTH)))
 
         success_inputs, failure_inputs = [], []
 

@@ -19,3 +19,23 @@ cd soar_dataset
 CUDA_VISIBLE_DEVICES="" tfds build --manual_dir <path_to_raw_data>
 ```
 You can modify settings in side the `soar_dataset/soar_dataset_dataset_builder.py` file (e.g., `NUM_WORKERS` and `CHUNKSIZE`).
+
+This data builder assumes your raw data is organized into the following structure:
+```
+manual_dir/robot_id/scene_id/policy_type/date/success/trajectory_{i}/*
+manual_dir/robot_id/scene_id/policy_type/date/failure/trajectory_{i}/*
+```
+Each `trajectory_{i}` directory will contain the following files, as logged by the code in the `data_collection` dir
+- actions.npy
+- eef_poses.npy
+- language_task.txt
+- robot_id.txt
+- task_list.txt
+- trajectory.mp4
+- combined.mp4
+- goals.mp4
+- object_list.txt
+- success.txt
+- time.txt
+
+The RLDS dataset will be automatically saved under `~/tensorflow_datasets/soar_dataset/`
