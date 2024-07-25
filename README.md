@@ -3,6 +3,16 @@ Code release for the paper "Autonomous Improvement of Instruction Following Skil
 
 This repository contains two components: (1) the VLM powered semantics-aware autonomous data collection pipeline, (2) converting the collected raw data into the RLDS format, and (3) Jax/Flax code for training the policies used in the paper.
 
+## SOAR-Data
+
+We have released SOAR-Data for public access [here](https://rail.eecs.berkeley.edu/datasets/soar_release/1.0.0/).
+We also provided a download script to download the dataset in RLDS format, which requires 136G of disk space.
+In this directory, run
+```bash
+bash soar_data/download_dataset.sh
+```
+This script should take around 20 minutes to download if you use the parallel download option, and we recommend downloading inside a tmux session.
+
 ## (1) Autonomous Data Collection
 
 We provide a ready-to-use implementation of autonomous data collection on a fleet of WidowX robot arms. This data collection system is designed around deploying instruction following policies at scale to collect autonomous datasets that are semantically relevant, diverse, and large. Special care is taken to minimize human supervision during data collection, with features like automatic reset detection (and subsequent Slack notification).
