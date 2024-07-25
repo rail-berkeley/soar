@@ -48,9 +48,9 @@ class WandBLogger(object):
                 "%Y%m%d_%H%M%S"
             )
 
-        self.config.experiment_id = (
-            self.experiment_id
-        ) = f"{self.config.exp_descriptor}_{self.config.unique_identifier}"  # NOQA
+        self.config.experiment_id = self.experiment_id = (
+            f"{self.config.exp_descriptor}_{self.config.unique_identifier}"  # NOQA
+        )
 
         print(self.config)
 

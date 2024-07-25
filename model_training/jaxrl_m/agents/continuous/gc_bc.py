@@ -168,7 +168,7 @@ class GCBCAgent(flax.struct.PyTreeNode):
                 encoder_def,
                 MLP(**network_kwargs),
                 action_dim=actions.shape[-1],
-                **policy_kwargs
+                **policy_kwargs,
             )
         }
 

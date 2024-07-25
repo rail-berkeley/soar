@@ -34,27 +34,38 @@ flags.DEFINE_string(
 
 # experiments
 flags.DEFINE_string("exp_name", "", "Experiment name.")
-flags.DEFINE_list('tag', list(), 'Name of experiment')
-flags.DEFINE_string('group', None, 'Group of the wandb experiments')
-flags.DEFINE_string('project', None, 'Project of the wandb experiments')
+flags.DEFINE_list("tag", list(), "Name of experiment")
+flags.DEFINE_string("group", None, "Group of the wandb experiments")
+flags.DEFINE_string("project", None, "Project of the wandb experiments")
 flags.DEFINE_bool("debug", False, "Debug mode, no wandb logging.")
 
 
-def rollout_subgoal(widowx_client, low_level_policy, image_goal, logger, config, status_info, deterministic=False, language_instr=None):
+def rollout_subgoal(
+    widowx_client,
+    low_level_policy,
+    image_goal,
+    logger,
+    config,
+    status_info,
+    deterministic=False,
+    language_instr=None,
+):
     t = 0
     try:
         while t < config["gc_policy_params"]["rollout_timesteps"]:
             obs = utils.get_observation(widowx_client, config)
             image_obs, pose = obs["image"], obs["state"]
             image_obs = np.array(
-                Image.fromarray(image_obs).resize((
-                    config["gc_policy_params"]["image_size"], 
-                    config["gc_policy_params"]["image_size"])
+                Image.fromarray(image_obs).resize(
+                    (
+                        config["gc_policy_params"]["image_size"],
+                        config["gc_policy_params"]["image_size"],
+                    )
                 )
             ).astype(np.uint8)
 
             # Save curr obs to disk for visualization
-            #imageio.imwrite("obs.png", image_obs) # legacy
+            # imageio.imwrite("obs.png", image_obs) # legacy
 
             if language_instr is None:
                 # Also resize the goal image to pass to the low level policy
@@ -66,10 +77,14 @@ def rollout_subgoal(widowx_client, low_level_policy, image_goal, logger, config,
                         )
                     )
                 ).astype(np.uint8)
-                action = low_level_policy(image_obs, goal_image_resized, pose, deterministic=deterministic)
+                action = low_level_policy(
+                    image_obs, goal_image_resized, pose, deterministic=deterministic
+                )
             else:
                 # If language_instr is not None, it means our low level policy is a language conditioned policy
-                action = low_level_policy(image_obs, language_instr, pose, deterministic=deterministic)
+                action = low_level_policy(
+                    image_obs, language_instr, pose, deterministic=deterministic
+                )
 
             # Log everything
             logger.log_obs(image_obs)
@@ -79,7 +94,14 @@ def rollout_subgoal(widowx_client, low_level_policy, image_goal, logger, config,
 
             # Update web viewer
             status_info["timestep"] = t
-            url = 'http://' + config["general_params"]["web_viewer_ip"] + ':' + str(config["general_params"]["web_viewer_port"]) + '/update_status/' + str(config["general_params"]["robot_id"])
+            url = (
+                "http://"
+                + config["general_params"]["web_viewer_ip"]
+                + ":"
+                + str(config["general_params"]["web_viewer_port"])
+                + "/update_status/"
+                + str(config["general_params"]["robot_id"])
+            )
             _ = requests.post(url, json=status_info)
 
             # Execute action
@@ -87,35 +109,45 @@ def rollout_subgoal(widowx_client, low_level_policy, image_goal, logger, config,
 
             print(f"Timestep {t}, pose: {pose}")
             t += 1
-            
+
     except KeyboardInterrupt:
         return True  # trajectory over
     return False
 
+
 def get_image_from_web_viewer(config):
     while True:
         try:
-            url = 'http://' + config["general_params"]["web_viewer_ip"] + ':' + str(config["general_params"]["web_viewer_port"]) + '/images/' + str(config["general_params"]["robot_id"]) + '/observation'
+            url = (
+                "http://"
+                + config["general_params"]["web_viewer_ip"]
+                + ":"
+                + str(config["general_params"]["web_viewer_port"])
+                + "/images/"
+                + str(config["general_params"]["robot_id"])
+                + "/observation"
+            )
             response = requests.get(url)
             with Image.open(io.BytesIO(response.content)) as img:
                 img = np.array(img)
             break
         except:
-            pass # repeat get request in case of error
-    
+            pass  # repeat get request in case of error
+
     return img
 
+
 def execute_trajectory(
-        widowx_client, 
-        env_params, 
-        tasker, 
-        low_level_policy, 
-        high_level_policy, 
-        logger, 
-        success_predictor, 
-        reset_detector, 
-        config
-    ):
+    widowx_client,
+    env_params,
+    tasker,
+    low_level_policy,
+    high_level_policy,
+    logger,
+    success_predictor,
+    reset_detector,
+    config,
+):
     widowx_client.init(env_params)
 
     # widowx_client.move_gripper(1.0)  # open gripper
@@ -127,9 +159,9 @@ def execute_trajectory(
 
     low_level_policy.reset()
 
-    # We will get the current obs to feed into the task proposer from the web viewer 
+    # We will get the current obs to feed into the task proposer from the web viewer
     # as opposed to from widowX, since the image is higher resolution
-    time.sleep(3) # Wait so web viewer catches up with reality
+    time.sleep(3)  # Wait so web viewer catches up with reality
     initial_obs = get_image_from_web_viewer(config)
 
     # Check if reset is required
@@ -147,7 +179,7 @@ def execute_trajectory(
     task = tasker.propose_task(initial_obs, off_limits_objects)
 
     # check if the task is valid and if not, skip to the next traj
-    # the task is not valid if the success_predictor considers it success 
+    # the task is not valid if the success_predictor considers it success
     # before any policy is executed
     initial_success = success_predictor.predict_outcome(
         initial_obs, task, log_metrics=False
@@ -161,14 +193,19 @@ def execute_trajectory(
         initial_success = success_predictor.predict_outcome(
             initial_obs, task, log_metrics=False
         )
-        
+
         if retry_counter > 3:
-            print("All proposed tasks have already succeeded... Just command the current task")
+            print(
+                "All proposed tasks have already succeeded... Just command the current task"
+            )
             break
 
     done = False
     n = 0
-    deterministic = random.random() < config["gc_policy_params"]["exploration"]["make_traj_deterministic_prob"]
+    deterministic = (
+        random.random()
+        < config["gc_policy_params"]["exploration"]["make_traj_deterministic_prob"]
+    )
     while not done and n < config["subgoal_predictor_params"]["max_subgoals"]:
         curr_obs = utils.get_observation(widowx_client, config)["image"]
         # Sample goal
@@ -186,8 +223,8 @@ def execute_trajectory(
         image_goal = high_level_policy(curr_obs, task)
 
         # Save goal image
-        #imageio.imwrite("goal.png", image_goal) # Legacy, we have a web viewer now
-        
+        # imageio.imwrite("goal.png", image_goal) # Legacy, we have a web viewer now
+
         # Send goal image to web viewer
         img = Image.fromarray(image_goal)
         buffer = io.BytesIO()
@@ -195,14 +232,22 @@ def execute_trajectory(
         buffer.seek(0)
         files = {"file": ("image.jpg", buffer.getvalue(), "image/jpeg")}
 
-        url = 'http://' + config["general_params"]["web_viewer_ip"] + ':' + str(config["general_params"]["web_viewer_port"]) + '/upload/' + str(config["general_params"]["robot_id"]) + '?type=goal'
+        url = (
+            "http://"
+            + config["general_params"]["web_viewer_ip"]
+            + ":"
+            + str(config["general_params"]["web_viewer_port"])
+            + "/upload/"
+            + str(config["general_params"]["robot_id"])
+            + "?type=goal"
+        )
         _ = requests.post(url, files=files)
 
         # Create status_info json to send to web viewer
         status_info = {
             "commanded_task": task,
             "subgoal": n,
-            "task_success": "in-progress"
+            "task_success": "in-progress",
         }
 
         # Rollout
@@ -210,7 +255,16 @@ def execute_trajectory(
             language_instr = task
         else:
             language_instr = None
-        done = rollout_subgoal(widowx_client, low_level_policy, image_goal, logger, config, status_info, deterministic=deterministic, language_instr=language_instr)
+        done = rollout_subgoal(
+            widowx_client,
+            low_level_policy,
+            image_goal,
+            logger,
+            config,
+            status_info,
+            deterministic=deterministic,
+            language_instr=language_instr,
+        )
         n += 1
 
     # check whether the moter has failed
@@ -236,30 +290,35 @@ def execute_trajectory(
         pass
 
     # Now we will assess whether the robot was successful in completing the task
-    time.sleep(3) # Wait so web viewer catches up with reality
+    time.sleep(3)  # Wait so web viewer catches up with reality
     final_obs = get_image_from_web_viewer(config)
 
     print("predicting task success...")
     success = success_predictor.predict_outcome(final_obs, task)
 
     # Update the task proposer with this information
-    completion_info = {
-        "task_str": task,
-        "success": success
-    }
+    completion_info = {"task_str": task, "success": success}
     tasker.log_task_completion(completion_info)
 
     # We'll also update the web viewer with success information
     final_status_info = {
-       "commanded_task": task,
-       "subgoal": config["subgoal_predictor_params"]["max_subgoals"],
-       "timestep": 0,
-       "task_success": "succeeded" if success else "failed"
+        "commanded_task": task,
+        "subgoal": config["subgoal_predictor_params"]["max_subgoals"],
+        "timestep": 0,
+        "task_success": "succeeded" if success else "failed",
     }
-    url = 'http://' + config["general_params"]["web_viewer_ip"] + ':' + str(config["general_params"]["web_viewer_port"]) + '/update_status/' + str(config["general_params"]["robot_id"])
+    url = (
+        "http://"
+        + config["general_params"]["web_viewer_ip"]
+        + ":"
+        + str(config["general_params"]["web_viewer_port"])
+        + "/update_status/"
+        + str(config["general_params"]["robot_id"])
+    )
     _ = requests.post(url, json=final_status_info)
-    
+
     logger.flush_trajectory(task, success)
+
 
 def reboot_joints(widowx_client, config):
     print("Rebooting joints...")
@@ -267,15 +326,25 @@ def reboot_joints(widowx_client, config):
     # Go to sleep pose
     obs = utils.get_observation(widowx_client, config)
     curr_pose = obs["state"]
-    pre_sleep_pose = np.array([0.14252, -0.00244, 0.098033, -0.00539, -0.7836, 0.0055, 1.0]) # corresponds to a position near the sleep pose
-    #pre_sleep_pose = np.array([0.33692948, 0.00805364, 0.02624852, -0.00474271, 0.11188847, -0.00563708, 1.0]) # corresponds to a position almost touching the table, near the reset pose
+    pre_sleep_pose = np.array(
+        [0.14252, -0.00244, 0.098033, -0.00539, -0.7836, 0.0055, 1.0]
+    )  # corresponds to a position near the sleep pose
+    # pre_sleep_pose = np.array([0.33692948, 0.00805364, 0.02624852, -0.00474271, 0.11188847, -0.00563708, 1.0]) # corresponds to a position almost touching the table, near the reset pose
     pre_sleep_action = pre_sleep_pose - curr_pose
     pre_sleep_action[-1] = 1.0
     widowx_client.step_action(pre_sleep_action, blocking=True)
-    widowx_client.sleep() # additionally go to sleep pose since for some reason prev command doesn't fully execute
+    widowx_client.sleep()  # additionally go to sleep pose since for some reason prev command doesn't fully execute
 
     # Reboot joints one by one
-    joint_names = ["waist", "shoulder", "elbow", "forearm_roll", "wrist_angle", "wrist_rotate", "gripper"]
+    joint_names = [
+        "waist",
+        "shoulder",
+        "elbow",
+        "forearm_roll",
+        "wrist_angle",
+        "wrist_rotate",
+        "gripper",
+    ]
     for joint in joint_names:
         widowx_client.reboot_motor(joint)
         time.sleep(0.5)
@@ -286,7 +355,9 @@ def reboot_joints(widowx_client, config):
 def main(_):
     tf.config.set_visible_devices([], "GPU")
 
-    YamlIncludeConstructor.add_to_loader_class(loader_class=yaml.FullLoader, base_dir=FLAGS.config_dir)
+    YamlIncludeConstructor.add_to_loader_class(
+        loader_class=yaml.FullLoader, base_dir=FLAGS.config_dir
+    )
     with open(os.path.join(FLAGS.config_dir, "config.yaml")) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -306,7 +377,9 @@ def main(_):
 
     env_params = WidowXConfigs.DefaultEnvParams.copy()
     env_params.update(config["general_params"]["env_params"])
-    widowx_client = WidowXClient(host=config["general_params"]["ip"], port=config["general_params"]["port"])
+    widowx_client = WidowXClient(
+        host=config["general_params"]["ip"], port=config["general_params"]["port"]
+    )
 
     logger = Logger(config)
     tasker = task_proposers[config["task_proposer_params"]["which_vlm"]](config)
@@ -321,7 +394,7 @@ def main(_):
             project_name = "autonomous_widowx"
         else:
             project_name = FLAGS.project
-            
+
         exp_name = FLAGS.exp_name + f"_robot_{config['general_params']['robot_id']}_"
         exp_name = exp_name + "_".join(config["task_definition_params"]["object_list"])
         wandb_config.update(
@@ -347,22 +420,24 @@ def main(_):
     while True:
         try:
             execute_trajectory(
-                widowx_client, 
-                env_params, 
-                tasker, 
-                low_level_policy, 
-                high_level_policy, 
-                logger, 
-                success_predictor, 
-                reset_detector, 
-                config
+                widowx_client,
+                env_params,
+                tasker,
+                low_level_policy,
+                high_level_policy,
+                logger,
+                success_predictor,
+                reset_detector,
+                config,
             )
             i += 1
 
             # log success info to wandb
             if log_to_wandb:
                 overall_success_rate = success_predictor.get_success_rate()
-                recent_success_rate = success_predictor.get_success_rate(n_most_recent=10)
+                recent_success_rate = success_predictor.get_success_rate(
+                    n_most_recent=10
+                )
                 n_attempted = tasker.get_task_attempted_counter()
                 per_task_info = {
                     task: {
@@ -374,17 +449,15 @@ def main(_):
                     for task in overall_success_rate.keys()
                 }
                 wandb_logger.log(per_task_info, step=i)
-            
+
             # periodically reset the robot joints to avoid problems
             print("Periodically reset the robot joints")
-            reboot_interval = config["general_params"].get(
-                "joints_reboot_interval", 10
-            )
+            reboot_interval = config["general_params"].get("joints_reboot_interval", 10)
             if i % reboot_interval == 0:
                 reboot_joints(widowx_client, config)
-        
+
             # Load the new checkpoint weights
-            #low_level_policy.update_weights()
+            # low_level_policy.update_weights()
 
         except KeyboardInterrupt:
             # manually reboot the robot when you see a motor fail
@@ -393,8 +466,9 @@ def main(_):
             if need_reboot == "y":
                 # Reboot joints
                 reboot_joints(widowx_client, config)
-                
+
             continue
-    
+
+
 if __name__ == "__main__":
     app.run(main)

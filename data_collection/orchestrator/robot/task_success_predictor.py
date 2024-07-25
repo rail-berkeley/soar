@@ -5,10 +5,12 @@ import numpy as np
 
 import utils
 
+
 class SuccessPredictor:
     """
     Uses a VLM to predict whether a given task has been completed
     """
+
     def __init__(self, config):
         self.config = config
 
@@ -20,23 +22,25 @@ class SuccessPredictor:
             "I have a robot arm manipulator in a lab setting. I commanded it to complete the following task:\n\n",
             "\n\nI want to assess whether the robot arm successfully completed the task. To do so, I prompted a vision-language model (VLM) with an image of the current robot workspace and the following question:\n\n",
             "\n\nIn response, the VLM answered the following:\n\n",
-            "\n\nBased on the task commanded and the VLM's response to the question, determine if the robot successfully completed the commanded task or not. If it did successfully complete the task, return just the word true. Otherwise return the word false. If for some reason the answer is neither true nor false, return false."
+            "\n\nBased on the task commanded and the VLM's response to the question, determine if the robot successfully completed the commanded task or not. If it did successfully complete the task, return just the word true. Otherwise return the word false. If for some reason the answer is neither true nor false, return false.",
         ]
 
         # Use for caching anything you want
         self.cache = {}
 
         # to record the success rates
-        self.task_success_record = self.init_previous_task_stats()  # task -> list of bools
+        self.task_success_record = (
+            self.init_previous_task_stats()
+        )  # task -> list of bools
 
     def init_previous_task_stats(self):
         task_success_record = {}
 
-        
         if self.config["task_proposer_params"]["reuse_task_statistics"]:
             trajectory_log_dir = self.config["general_params"]["video_save_path"]
             logged_trajs = [
-                traj for traj in os.listdir(trajectory_log_dir) 
+                traj
+                for traj in os.listdir(trajectory_log_dir)
                 if os.path.isdir(os.path.join(trajectory_log_dir, traj))
             ]
             for traj in tqdm(logged_trajs):
@@ -48,14 +52,14 @@ class SuccessPredictor:
                 if traj_task not in task_success_record:
                     task_success_record[traj_task] = []
                 task_success_record[traj_task].append(traj_success == "true")
-        
+
         return task_success_record
-    
+
     def record_task_success(self, task_str, success):
         if task_str not in self.task_success_record:
             self.task_success_record[task_str] = []
         self.task_success_record[task_str].append(success)
-    
+
     def get_success_rate(self, n_most_recent=None):
         success_rates = {}
         for task_str, success_list in self.task_success_record.items():
@@ -66,14 +70,16 @@ class SuccessPredictor:
 
     def predict_outcome(self, image: np.ndarray, task_str: str, log_metrics=True):
         # convert the task_str into a VQA style question
-        vqa_style_q_unparsed = utils.ask_gpt4(self.task_to_vqa_prompt + task_str, cache=self.cache)
+        vqa_style_q_unparsed = utils.ask_gpt4(
+            self.task_to_vqa_prompt + task_str, cache=self.cache
+        )
 
         # add response to cache
         self.cache[self.task_to_vqa_prompt + task_str] = vqa_style_q_unparsed
 
         vqa_style_q_unparsed = vqa_style_q_unparsed.strip()
         if ":" in vqa_style_q_unparsed:
-            vqa_style_q = vqa_style_q_unparsed[vqa_style_q_unparsed.index(":")+2:]
+            vqa_style_q = vqa_style_q_unparsed[vqa_style_q_unparsed.index(":") + 2 :]
         else:
             vqa_style_q = vqa_style_q_unparsed
         print("vqa_style_q:", vqa_style_q)
@@ -89,7 +95,15 @@ class SuccessPredictor:
         print("vlm_output:", vlm_output)
 
         # parse the output
-        decoding_prompt = self.prompt_to_parse_vlm_output[0] + task_str + self.prompt_to_parse_vlm_output[1] + vqa_style_q + self.prompt_to_parse_vlm_output[2] + vlm_output + self.prompt_to_parse_vlm_output[3]
+        decoding_prompt = (
+            self.prompt_to_parse_vlm_output[0]
+            + task_str
+            + self.prompt_to_parse_vlm_output[1]
+            + vqa_style_q
+            + self.prompt_to_parse_vlm_output[2]
+            + vlm_output
+            + self.prompt_to_parse_vlm_output[3]
+        )
         print("decoding_prompt:", decoding_prompt)
         parsed_vlm_output = utils.ask_gpt4(decoding_prompt, cache=self.cache)
 
@@ -102,9 +116,11 @@ class SuccessPredictor:
         try:
             assert success in (True, False)
         except AssertionError:
-            print("Error: VLM output was neither 'true' nor 'false'. Assuming task failed.")
+            print(
+                "Error: VLM output was neither 'true' nor 'false'. Assuming task failed."
+            )
             success = False
-        
+
         if log_metrics:
             self.record_task_success(task_str, success)
 

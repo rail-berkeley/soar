@@ -55,8 +55,9 @@ ACTION_PROPRIO_METADATA = {
         "std": np.array(ACT_STD),
         "min": np.array(ACT_MIN),
         "max": np.array(ACT_MAX),
-    }
+    },
 }
+
 
 def get_config(config_string):
     possible_structures = {

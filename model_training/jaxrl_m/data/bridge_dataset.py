@@ -493,9 +493,11 @@ class BridgeDataset:
             hash_dependencies=(
                 str(builder.info),
                 str(proprio_obs_key),
-                ModuleSpec.to_string(standardize_fn)
-                if standardize_fn is not None
-                else "",
+                (
+                    ModuleSpec.to_string(standardize_fn)
+                    if standardize_fn is not None
+                    else ""
+                ),
                 *map(ModuleSpec.to_string, filter_functions),
             ),
             # save_dir=builder.data_dir,

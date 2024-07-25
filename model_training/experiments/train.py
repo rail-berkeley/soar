@@ -24,6 +24,7 @@ from jaxrl_m.vision import encoders
 
 try:
     from jax_smi import initialise_tracking  # type: ignore
+
     initialise_tracking()
 except ImportError:
     pass
@@ -31,8 +32,8 @@ except ImportError:
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string("exp_name", "", "Experiment name.")
-flags.DEFINE_list('tag', list(), 'Name of experiment')
-flags.DEFINE_string('group', None, 'Group of the wandb experiments')
+flags.DEFINE_list("tag", list(), "Name of experiment")
+flags.DEFINE_string("group", None, "Group of the wandb experiments")
 flags.DEFINE_bool("debug", False, "Debug config")
 flags.DEFINE_integer("utd", 1, "update to data ratio")
 
@@ -49,6 +50,7 @@ config_flags.DEFINE_config_file(
     "File path to the bridgedata configuration.",
     lock_config=False,
 )
+
 
 def main(_):
     # prevent cross region transfer
@@ -92,7 +94,6 @@ def main(_):
         f"{wandb_logger.config.exp_descriptor}_{wandb_logger.config.unique_identifier}",
     )
 
-
     # load datasets
     random.seed(FLAGS.config.seed)
     train_paths = []
@@ -109,17 +110,21 @@ def main(_):
         FLAGS.bridgedata_config.sampling_weights["autonomous_data_successes"],
         FLAGS.bridgedata_config.sampling_weights["autonomous_data_failures"],
     ]
-    train_sample_weights = [weight for weight in train_sample_weights if weight > 0]  # remove 0s from the sample weights
-    assert sum(train_sample_weights) == 1.0, f"Sample weights must sum to 1.0, got {sum(train_sample_weights)}"
+    train_sample_weights = [
+        weight for weight in train_sample_weights if weight > 0
+    ]  # remove 0s from the sample weights
+    assert (
+        sum(train_sample_weights) == 1.0
+    ), f"Sample weights must sum to 1.0, got {sum(train_sample_weights)}"
 
     # pick out the splits needed from the dataset
     train_data_splits = []
     if FLAGS.bridgedata_config.sampling_weights.pretraining_data > 0:
-        train_data_splits.append('train')
+        train_data_splits.append("train")
     if FLAGS.bridgedata_config.sampling_weights.autonomous_data_successes > 0:
-        train_data_splits.append('success')
+        train_data_splits.append("success")
     if FLAGS.bridgedata_config.sampling_weights.autonomous_data_failures > 0:
-        train_data_splits.append('failure')
+        train_data_splits.append("failure")
 
     train_data = BridgeDataset(
         train_paths,
@@ -137,7 +142,7 @@ def main(_):
         batch_size=1,  # return 1 traj because trajs can have different lens
         return_entire_trajectory=True,  # entire traj for plotting Q values
         sample_weights=None,
-        data_splits=['val'],
+        data_splits=["val"],
         train=False,
         **FLAGS.config.dataset_kwargs,
     )
@@ -147,7 +152,7 @@ def main(_):
         batch_size=FLAGS.config.batch_size,
         train=False,
         sample_weights=None,
-        data_splits=['val'],
+        data_splits=["val"],
         **FLAGS.config.dataset_kwargs,
     )
 
@@ -176,7 +181,9 @@ def main(_):
     )
     for loader_name, loader_kwargs in FLAGS.config.pretrained_loaders:
         loader = partial(pretrained_loaders[loader_name], **loader_kwargs)
-        agent = agent.replace(state=agent.state.replace(params=loader(agent.state.params)))
+        agent = agent.replace(
+            state=agent.state.replace(params=loader(agent.state.params))
+        )
     if FLAGS.config.get("resume_path", "") != "":
         agent = checkpoints.restore_checkpoint(FLAGS.config.resume_path, target=agent)
     # replicate agent across devices
@@ -217,19 +224,24 @@ def main(_):
                 wandb_logger.log({"validation": val_metrics}, step=agent.state.step)
 
                 # collect full validation trajs
-                val_data_iter = val_full_traj_data.iterator()  # batch size 1, cannot shard
+                val_data_iter = (
+                    val_full_traj_data.iterator()
+                )  # batch size 1, cannot shard
                 val_trajs = []
                 for _ in range(FLAGS.config.num_val_trajs):
                     traj = next(val_data_iter)
                     val_trajs.append(traj)
-                val_trajs = jax.tree_map(lambda x: x[0, ...], val_trajs)  # get rid of batch dim
+                val_trajs = jax.tree_map(
+                    lambda x: x[0, ...], val_trajs
+                )  # get rid of batch dim
                 # plot the Q values
                 wandb_logger.log(
                     {
                         f"evaluation/visualization": wandb.Image(
                             value_and_reward_visulization(val_trajs, agent)
                         )
-                    }, step=agent.state.step
+                    },
+                    step=agent.state.step,
                 )
                 timer.tock("val")
 
@@ -246,7 +258,9 @@ def main(_):
                 update_info = jax.device_get(update_info)
                 wandb_logger.log({"training": update_info}, step=agent.state.step)
 
-                wandb_logger.log({"timer": timer.get_average_times()}, step=agent.state.step)
+                wandb_logger.log(
+                    {"timer": timer.get_average_times()}, step=agent.state.step
+                )
         except tf.errors.OpError as e:
             # sometimes tfds will have trouble communicating with cloud storage bucket for some reason...
             print(f"Error in iteration {i}: {e}")
@@ -262,6 +276,7 @@ def main(_):
             # sometimes wandb will log NaNs
             print(update_info)
             raise e
+
 
 if __name__ == "__main__":
     app.run(main)

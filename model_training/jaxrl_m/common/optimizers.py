@@ -40,10 +40,18 @@ def make_optimizer(
 
         if weight_decay is not None:
             optimizer_stages.append(
-                optax.adamw(learning_rate=learning_rate, weight_decay=weight_decay, b2=0.999 if beta2 is None else beta2)
+                optax.adamw(
+                    learning_rate=learning_rate,
+                    weight_decay=weight_decay,
+                    b2=0.999 if beta2 is None else beta2,
+                )
             )
         else:
-            optimizer_stages.append(optax.adam(learning_rate=learning_rate, b2=0.999 if beta2 is None else beta2))
+            optimizer_stages.append(
+                optax.adam(
+                    learning_rate=learning_rate, b2=0.999 if beta2 is None else beta2
+                )
+            )
 
         return optax.chain(*optimizer_stages)
 

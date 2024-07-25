@@ -106,7 +106,9 @@ class GCEncodingWrapper(nn.Module):
         if self.use_proprio:
             if len(encoding.shape) == 2 and len(observations["proprio"].shape) == 3:
                 # edge case
-                encoding = jnp.concatenate([encoding, observations["proprio"][:, 0, :]], axis=-1)
+                encoding = jnp.concatenate(
+                    [encoding, observations["proprio"][:, 0, :]], axis=-1
+                )
             else:
                 encoding = jnp.concatenate([encoding, observations["proprio"]], axis=-1)
 
