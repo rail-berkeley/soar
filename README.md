@@ -1,7 +1,17 @@
 # SOAR
 Code release for the paper "Autonomous Improvement of Instruction Following Skills via Foundation Models".
 
-This repository contains two components: (1) the VLM powered semantics-aware autonomous data collection pipeline, and (2) Jax/Flax code for training the policies used in the paper.
+This repository contains two components: (1) the VLM powered semantics-aware autonomous data collection pipeline, (2) converting the collected raw data into the RLDS format, and (3) Jax/Flax code for training the policies used in the paper.
+
+## SOAR-Data
+
+We have released SOAR-Data for public access [here](https://rail.eecs.berkeley.edu/datasets/soar_release/1.0.0/).
+We also provided a download script to download the dataset in RLDS format, which requires 136G of disk space.
+In this directory, run
+```bash
+bash soar_data/download_dataset.sh
+```
+This script should take around 20 minutes to download if you use the parallel download option, and we recommend downloading inside a tmux session.
 
 ## (1) Autonomous Data Collection
 
@@ -56,6 +66,10 @@ python orchestrator/robot/main.py --config_dir config/<robot_config_dir>
 from the `data_collection` directory. The script `main.py` contains the code for iterating through the full autonomous data collection loop: querying the VLM for which task to command, querying the SuSIE server for a subgoal image, rolling out the policy, querying the VLM for success determination, and logging. You should be able to keep this script and the robot running for many hours at a time, potentially periodically resetting a fallen object in the robot's environment.
 
 ## Model Training
+
+## RLDS Data Conversion
+We convert the raw data logged in the `data_collection/*` directories into the commonly used RLDS format. The conversion code is
+located in the `rlds_converter` directory. See [rlds_converter/README.md](https://github.com/rail-berkeley/soar/blob/main/rlds_converter/README.md) for more information.
 
 ## Contributing
 To enable code checks and auto-formatting, please install pre-commit hooks (run this in the root directory):
