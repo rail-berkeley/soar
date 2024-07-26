@@ -2,6 +2,8 @@ import numpy as np
 import ml_collections
 
 
+# BridgeDatav2 metadata
+
 ACT_MEAN = [
     1.9296819e-04,
     1.3667766e-04,

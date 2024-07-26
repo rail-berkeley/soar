@@ -11,14 +11,12 @@ import wandb
 from absl import app, flags, logging
 from flax.training import checkpoints
 from ml_collections import config_flags
-from tpu_utils import prevent_cross_region
 
 from jaxrl_m.agents import agents
 from jaxrl_m.common.common import shard_batch
 from jaxrl_m.common.wandb import WandBLogger
 from jaxrl_m.data.bridge_dataset import BridgeDataset
 from jaxrl_m.utils.timer_utils import Timer
-from jaxrl_m.utils.visualization_utils import value_and_reward_visulization
 from jaxrl_m.utils.train_utils import pretrained_loaders
 from jaxrl_m.vision import encoders
 
@@ -35,7 +33,6 @@ flags.DEFINE_string("exp_name", "", "Experiment name.")
 flags.DEFINE_list("tag", list(), "Name of experiment")
 flags.DEFINE_string("group", None, "Group of the wandb experiments")
 flags.DEFINE_bool("debug", False, "Debug config")
-flags.DEFINE_integer("utd", 1, "update to data ratio")
 
 config_flags.DEFINE_config_file(
     "config",
@@ -53,13 +50,6 @@ config_flags.DEFINE_config_file(
 
 
 def main(_):
-    # prevent cross region transfer
-    prevent_cross_region(
-        *FLAGS.bridgedata_config.pretraining_data,
-        *FLAGS.bridgedata_config.autonomous_data,
-        FLAGS.config.save_dir,
-    )
-
     devices = jax.local_devices()
     num_devices = len(devices)
     assert FLAGS.config.batch_size % num_devices == 0
@@ -75,8 +65,7 @@ def main(_):
     wandb_config = WandBLogger.get_default_config()
     wandb_config.update(
         {
-            # "project": f"jaxrl_{FLAGS.config.agent}_autonomous_data",
-            "project": f"jaxrl_{FLAGS.config.agent}_bridge",
+            "project": f"jaxrl_{FLAGS.config.agent}_autonomous_data",
             "exp_descriptor": FLAGS.exp_name,
             "tag": FLAGS.tag,
             "group": FLAGS.group,
@@ -133,17 +122,6 @@ def main(_):
         train=True,
         sample_weights=train_sample_weights,
         data_splits=train_data_splits,
-        paths_index_with_old_tf_format=list(range(1, len(train_paths))),
-        **FLAGS.config.dataset_kwargs,
-    )
-    val_full_traj_data = BridgeDataset(
-        FLAGS.bridgedata_config.pretraining_data,
-        FLAGS.config.seed,
-        batch_size=1,  # return 1 traj because trajs can have different lens
-        return_entire_trajectory=True,  # entire traj for plotting Q values
-        sample_weights=None,
-        data_splits=["val"],
-        train=False,
         **FLAGS.config.dataset_kwargs,
     )
     val_data = BridgeDataset(
@@ -200,10 +178,7 @@ def main(_):
             timer.tock("dataset")
 
             timer.tick("train")
-            if FLAGS.utd > 1:
-                agent, update_info = agent.update_high_utd(batch, utd_ratio=FLAGS.utd)
-            else:
-                agent, update_info = agent.update(batch)
+            agent, update_info = agent.update(batch)
             timer.tock("train")
 
             if agent.state.step % FLAGS.config.eval_interval == 0:
@@ -223,26 +198,6 @@ def main(_):
                 val_metrics = jax.tree_map(lambda *xs: np.mean(xs), *val_metrics)
                 wandb_logger.log({"validation": val_metrics}, step=agent.state.step)
 
-                # collect full validation trajs
-                val_data_iter = (
-                    val_full_traj_data.iterator()
-                )  # batch size 1, cannot shard
-                val_trajs = []
-                for _ in range(FLAGS.config.num_val_trajs):
-                    traj = next(val_data_iter)
-                    val_trajs.append(traj)
-                val_trajs = jax.tree_map(
-                    lambda x: x[0, ...], val_trajs
-                )  # get rid of batch dim
-                # plot the Q values
-                wandb_logger.log(
-                    {
-                        f"evaluation/visualization": wandb.Image(
-                            value_and_reward_visulization(val_trajs, agent)
-                        )
-                    },
-                    step=agent.state.step,
-                )
                 timer.tock("val")
 
             if agent.state.step % FLAGS.config.save_interval == 0:
@@ -271,11 +226,6 @@ def main(_):
             timer.force_tock_everything()
 
             continue
-
-        except ValueError as e:
-            # sometimes wandb will log NaNs
-            print(update_info)
-            raise e
 
 
 if __name__ == "__main__":

@@ -1,10 +1,9 @@
 #!/bin/bash
 
-# Define variables
-BASE_URL="https://rail.eecs.berkeley.edu/datasets/soar_release/1.0.0/"
-SAVE_DIR="~/soar_data"
-REQUIRED_SPACE_GB=140
-URL_FILE="soar_data/urls.txt"
+# Allow overriding variables from the command line
+SAVE_DIR="${SAVE_DIR:-~/soar_data}"
+REQUIRED_SPACE_GB="${REQUIRED_SPACE_GB:-140}"
+URL_FILE="${URL_FILE:-soar_data/urls.txt}"
 
 # Function to check if enough disk space is available
 check_disk_space() {
@@ -26,7 +25,7 @@ check_disk_space
 
 # Check if the url file exists
 if [ ! -f $URL_FILE ]; then
-    echo "Error: URLs file not found. Please run from root directory of the repo."
+    echo "Error: URLs file '${URL_FILE}' not found. Please run from the root directory of the repository."
     echo "URL file should be found at soar_data/urls.txt"
     echo "Aborting download."
     exit 1

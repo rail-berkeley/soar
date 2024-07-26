@@ -5,6 +5,7 @@ repos:
       - id: check-yaml
       - id: check-ast
       - id: check-added-large-files
+        args: ['--maxkb=2000']
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: end-of-file-fixer

@@ -1,0 +1,4 @@
+https://rail.eecs.berkeley.edu/datasets/soar_release/test/dataset_info.json
+https://rail.eecs.berkeley.edu/datasets/soar_release/test/features.json
+https://rail.eecs.berkeley.edu/datasets/soar_release/test/soar_dataset-failure.tfrecord-00000-of-00001
+https://rail.eecs.berkeley.edu/datasets/soar_release/test/soar_dataset-success.tfrecord-00000-of-00001
