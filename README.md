@@ -13,6 +13,8 @@ bash soar_data/download_dataset.sh
 ```
 This script should take around 20 minutes to download if you use the parallel download option, and we recommend downloading inside a tmux session.
 
+To load the dataset for training and other downstream use cases, we have provided a minimal example in [soar_data/load_soar_data.ipynb](soar_data/load_soar_data.ipynb) that loads the dataset and visualizes it.
+
 ## (1) Autonomous Data Collection
 
 We provide a ready-to-use implementation of autonomous data collection on a fleet of WidowX robot arms. This data collection system is designed around deploying instruction following policies at scale to collect autonomous datasets that are semantically relevant, diverse, and large. Special care is taken to minimize human supervision during data collection, with features like automatic reset detection (and subsequent Slack notification).
@@ -69,7 +71,7 @@ from the `data_collection` directory. The script `main.py` contains the code for
 
 ## RLDS Data Conversion
 We convert the raw data logged in the `data_collection/*` directories into the commonly used RLDS format. The conversion code is
-located in the `rlds_converter` directory. See [rlds_converter/README.md](https://github.com/rail-berkeley/soar/blob/main/rlds_converter/README.md) for more information.
+located in the `rlds_converter` directory. See [rlds_converter/README.md](rlds_converter/README.md) for more information.
 
 ## Contributing
 To enable code checks and auto-formatting, please install pre-commit hooks (run this in the root directory):

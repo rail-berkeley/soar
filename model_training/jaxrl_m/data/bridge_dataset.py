@@ -1,4 +1,5 @@
 import fnmatch
+import os
 from functools import partial
 from typing import Iterable, List, Optional, Union
 
@@ -13,8 +14,6 @@ from octo.utils.spec import ModuleSpec
 
 from jaxrl_m.data.tf_augmentations import augment
 from jaxrl_m.data.tf_goal_relabeling import GOAL_RELABELING_FUNCTIONS
-
-tf.config.run_functions_eagerly(True)
 
 
 def glob_to_path_list(
@@ -161,9 +160,7 @@ class BridgeDataset:
         obs_horizon: Number of consecutive observations that will be conditioned on.
         load_langauge: Whether to look for and load language from the data.
         skip_unlabeled: Whether to filter out trajectories not labeled with language.
-        action_merge_horizon: if > 1, sum actions over this many steps. if -1, use
-            an adaptive scheme to automatically merge actions together until either
-            a) the gripper action changes or b) the proprio sum exceeds the metadata threshold.
+        action_merge_horizon: if > 1, sum actions over this many steps.
     """
 
     def __init__(
@@ -174,7 +171,7 @@ class BridgeDataset:
         normalization_type: Optional[str] = "normal",
         action_clip_delta: float = 0,
         relabel_actions: bool = True,
-        goal_relabeling_strategy: str = "uniform",
+        goal_relabeling_strategy: Optional[str] = None,
         goal_relabeling_kwargs: dict = {},
         sample_weights: Optional[List[float]] = None,
         data_splits: Optional[List[str]] = None,
@@ -191,10 +188,8 @@ class BridgeDataset:
         skip_unlabeled: bool = False,
         gripper_action_mean: float = 0.5,
         gripper_action_std: float = 0.1,
-        dataset_contains_commanded_goals: bool = False,
         return_entire_trajectory: bool = False,
         action_merge_horizon: int = 1,
-        static_eef_filter_threshold=0.1,
         **kwargs,
     ):
         logging.warning("Extra kwargs passed to BridgeDataset: %s", kwargs)
@@ -207,6 +202,8 @@ class BridgeDataset:
         assert np.isclose(sum(sample_weights), 1.0)
         if data_splits is None:
             data_splits = [None] * len(data_prefixes)
+        else:
+            assert len(data_splits) == len(data_prefixes)
 
         self.data_splits = data_splits
         self.relabel_actions = relabel_actions
@@ -224,24 +221,16 @@ class BridgeDataset:
         self.load_language = load_language
         self.gripper_action_mean = gripper_action_mean
         self.gripper_action_std = gripper_action_std
-        self.dataset_contains_commanded_goals = dataset_contains_commanded_goals
         self.return_entire_trajectory = return_entire_trajectory
         self.action_merge_horizon = action_merge_horizon
-        self.static_eef_filter_threshold = static_eef_filter_threshold
 
         if self.load_language:
             self.PROTO_TYPE_SPEC["language"] = tf.string
 
         # construct a dataset for each sub-list of paths
         datasets = []
-        diff_gc_kwargs_per_dataset = type(self.goal_relabeling_kwargs) == list
-        if diff_gc_kwargs_per_dataset:
-            logging.info("Multiple sets of goal relabeling kwargs passed in")
-            all_goal_relabeling_kwargs = self.goal_relabeling_kwargs
 
         for i, sub_data_prefix in enumerate(data_prefixes):
-            if diff_gc_kwargs_per_dataset:
-                self.goal_relabeling_kwargs = all_goal_relabeling_kwargs[i]
             datasets.append(
                 self._construct_tf_dataset(
                     sub_data_prefix,
@@ -300,6 +289,8 @@ class BridgeDataset:
         """
         # get the data split paths
         paths = []
+        if data_split is None:
+            data_split = ""
         for prefix in prefixes:
             paths += glob_to_path_list(
                 [f"*{data_split}*.tfrecord*"],
@@ -330,8 +321,7 @@ class BridgeDataset:
             partial(
                 self._process_actions,
                 normalization_metadata=action_proprio_metadata,
-                merge_actions=self.action_merge_horizon != 1,
-                crop_out_ends=False,
+                merge_actions=self.action_merge_horizon > 1,
             ),
             num_parallel_calls=tf.data.AUTOTUNE,
         )
@@ -400,25 +390,16 @@ class BridgeDataset:
         }
 
     def _process_actions(
-        self, traj, normalization_metadata, merge_actions=False, crop_out_ends=False
+        self,
+        traj,
+        normalization_metadata,
+        merge_actions=False,
     ):
-        # crop out low magnitude actions at the end of the trajectory
-        if crop_out_ends:
-            print(
-                f"NOTE: Discarding low magnitude actions that occur at the end of autonomous trajectories"
-            )
-            traj = self._crop_out_ends(traj)
-
         # sum actions over a horizon
         if merge_actions:
-            if self.action_merge_horizon > 1:
-                print(f"NOTE: Summing actions over {self.action_merge_horizon} steps")
-                traj = self._sum_actions(traj)
-            else:
-                assert self.action_merge_horizon == -1
-                print(f"NOTE: Adaptive summing actions")
-                traj = self._sum_actions_adaptive(traj)
-                # traj = self._sum_actions_with_gripper_change_window_size(traj)  # another option
+            assert self.action_merge_horizon > 1
+            print(f"NOTE: Summing actions over {self.action_merge_horizon} steps")
+            traj = self._sum_actions(traj)
         else:
             assert self.action_merge_horizon == 1
 
@@ -448,7 +429,7 @@ class BridgeDataset:
                     - traj["observations"]["proprio"][:, :6]
                 )
             else:
-                assert self.action_merge_horizon > 1 or self.action_merge_horizon == -1
+                assert self.action_merge_horizon > 1
                 # already extracted movement actions from proprio in _sum_actions()
                 movement_actions = traj["actions"][:, :6]
 
@@ -471,33 +452,48 @@ class BridgeDataset:
         imported from the octo loaders
         """
 
+        builder = tfds.builder_from_directories(dataset_dir)
+        ignore_errors = False
+        force_recompute_dataset_statistics = True
+        filter_functions = ()
+        proprio_obs_key = "proprio"
+        standardize_fn = ModuleSpec.create(
+            "octo.data.oxe.oxe_standardization_transforms:bridge_dataset_transform"
+        )
+
         def is_nonzero_length(traj):
             return tf.shape(traj["action"])[0] > 0
 
-        builder = tfds.builder_from_directories(dataset_dir)
-        ignore_errors = False
-        force_recompute_dataset_statistics = False
-        filter_functions = ()
-        proprio_obs_key = "proprio"
-        standardize_fn = None
+        def standardize(traj):
+            # createdy by zhouzypaul
+            if standardize_fn is not None:
+                traj = ModuleSpec.instantiate(standardize_fn)(traj)
+
+            return traj
 
         full_dataset = dl.DLataset.from_rlds(builder, split="all", shuffle=False)
         for filter_fcn_spec in filter_functions:
             full_dataset = full_dataset.filter(ModuleSpec.instantiate(filter_fcn_spec))
         if ignore_errors:
             full_dataset = full_dataset.ignore_errors()
-        full_dataset = full_dataset.filter(is_nonzero_length)
+        full_dataset = full_dataset.traj_map(standardize).filter(is_nonzero_length)
+
         # tries to load from cache, otherwise computes on the fly
+
+        # octo code has a bug and does not check for creation of log_dir
+        # hence we need to do it here
+        default_cache_dir = os.path.expanduser("~/.cache/octo")
+        if not os.path.exists(default_cache_dir):
+            os.makedirs(default_cache_dir)
+
         dataset_statistics = get_dataset_statistics(
             full_dataset,
             hash_dependencies=(
                 str(builder.info),
                 str(proprio_obs_key),
-                (
-                    ModuleSpec.to_string(standardize_fn)
-                    if standardize_fn is not None
-                    else ""
-                ),
+                ModuleSpec.to_string(standardize_fn)
+                if standardize_fn is not None
+                else "",
                 *map(ModuleSpec.to_string, filter_functions),
             ),
             # save_dir=builder.data_dir,
@@ -602,246 +598,6 @@ class BridgeDataset:
 
         return traj
 
-    def _crop_out_ends(self, traj):
-        """
-        We begin from the end of the trajectory and start summing action magnitudes. We keep
-        cropping out actions until the sum of action magnitudes exceeds some threshold.
-        """
-        action_magnitudes = tf.math.sqrt(
-            tf.math.reduce_sum(tf.math.square(traj["actions"][:, :6]), axis=1)
-        )
-        action_magnitudes_cumsum = tf.math.cumsum(action_magnitudes, reverse=True)
-        cumsum_mask = action_magnitudes_cumsum > self.static_eef_filter_threshold
-        cumsum_mask = tf.cast(cumsum_mask, tf.int32)
-        keep_len = tf.math.reduce_sum(cumsum_mask)
-        traj["actions"] = traj["actions"][:keep_len]
-        traj["observations"]["image"] = traj["observations"]["image"][:keep_len]
-        traj["observations"]["proprio"] = traj["observations"]["proprio"][:keep_len]
-        traj["next_observations"]["image"] = traj["next_observations"]["image"][
-            :keep_len
-        ]
-        traj["next_observations"]["proprio"] = traj["next_observations"]["proprio"][
-            :keep_len
-        ]
-        traj["terminals"] = traj["terminals"][:keep_len]
-
-        return traj
-
-    def _sum_actions_adaptive(self, traj):
-        """
-        if the gripper action has not changed, we sum over the previus N actions
-        until the proprio sum exceeds the threshold
-        if the gripper action has changed, we return the current action
-        """
-        assert self.action_merge_horizon == -1
-        threshold = (
-            tf.constant(
-                # [0.69475555, 0.6719149, 0.6961195, 0.68336874, 0.7066346, 0.50463235],  # mean with standard normal
-                # [0.0063365395, 0.008541655, 0.008578023, 0.017812656, 0.020301819, 0.039407436],  # mean
-                # [0.0065982887, 0.011018573, 0.009872402, 0.013506467, 0.0193964, 0.044167284], #  mean with merge-2 on 250green
-                [
-                    0.004217699,
-                    0.005272906,
-                    0.0060185324,
-                    0.009426154,
-                    0.0137420595,
-                    0.026834767,
-                ],  # median with merge-2 on 250 green
-                dtype=tf.float32,
-            )
-            * 2.5
-        )
-        movement_actions = (
-            traj["next_observations"]["proprio"][:, :6]
-            - traj["observations"]["proprio"][:, :6]
-        )
-
-        if self.relabel_actions:
-            # actions are based on proprio
-
-            def scan_fn(acc, i):
-                """
-                start accumulating action from the first action, and use a sliding
-                window to sum until 1) the threshold is reached or 2) the gripper
-                action changes. Then we restart the sum from the current action.
-                """
-                prev_a, kick_out_pointer = acc
-
-                # gripper
-                prev_gripper = traj["actions"][i - 1, 6]
-                current_gripper = traj["actions"][i, 6]
-
-                # action sums
-                prev_sum = tf.ensure_shape(prev_a[:6], (6,))
-                current_sum = prev_sum + movement_actions[i, :6]
-                current_sum = tf.ensure_shape(current_sum, (6,))
-
-                current_actions = tf.ensure_shape(movement_actions[i, :6], (6,))
-
-                def return_current_action():
-                    nonlocal kick_out_pointer
-                    a = tf.concat([current_actions, [current_gripper]], axis=0)
-                    a = tf.ensure_shape(a, (7,))
-                    return a, kick_out_pointer
-
-                def return_summed_action():
-                    nonlocal current_sum
-                    nonlocal threshold
-                    nonlocal kick_out_pointer
-                    # check if current_sum exceeds the threshold for half of the action dims
-                    while (
-                        tf.math.reduce_sum(
-                            tf.cast(tf.math.abs(current_sum) >= threshold, tf.float32)
-                        )
-                        >= 1
-                        and kick_out_pointer < i
-                    ):
-                        # if the sum exceeds the threshold, we kick out the first action
-                        # and update the sum
-                        current_sum = (
-                            current_sum - movement_actions[kick_out_pointer, :6]
-                        )
-                        current_sum = tf.ensure_shape(current_sum, (6,))
-                        kick_out_pointer += 1
-                    a = tf.concat([current_sum, [current_gripper]], axis=0)
-                    a = tf.ensure_shape(a, (7,))
-                    return a, kick_out_pointer
-
-                return tf.cond(
-                    tf.not_equal(prev_gripper, current_gripper),
-                    return_current_action,
-                    return_summed_action,
-                )
-
-            new_actions, _ = tf.scan(
-                scan_fn,
-                tf.range(tf.shape(traj["actions"])[0]),
-                (tf.zeros(7), 0),
-            )
-            traj["actions"] = new_actions
-
-        else:
-            # actions are based on recorded actions
-            raise NotImplementedError
-
-        return traj
-
-    def _sum_actions_with_gripper_change_window_size(self, traj):
-        """
-        sum the adjacent 2 actions always
-        except when the gripper action changes, then we return the current action
-        (and we do this around a window size)
-        """
-        assert self.action_merge_horizon == -1
-        fixed_action_merge_horizon = 2
-        movement_actions = (
-            traj["next_observations"]["proprio"][:, :6]
-            - traj["observations"]["proprio"][:, :6]
-        )
-
-        if self.relabel_actions:
-            # actions are based on proprio
-
-            def scan_action(prev_a, i):
-                # gripper window size
-                gripper_window_size = 3
-                gripper_window_start = tf.maximum(0, i - gripper_window_size)
-                gripper_window_end = tf.minimum(
-                    i + gripper_window_size, tf.shape(traj["actions"])[0] - 1
-                )
-
-                gripper_changed = tf.reduce_any(
-                    tf.not_equal(
-                        traj["actions"][gripper_window_start:gripper_window_end, 6],
-                        traj["actions"][i, 6],
-                    )
-                )
-
-                current_actions = tf.ensure_shape(movement_actions[i, :6], (6,))
-                current_gripper = traj["actions"][i, 6]
-
-                def return_current_action():
-                    a = tf.concat([current_actions, [current_gripper]], axis=0)
-                    a = tf.ensure_shape(a, (7,))
-                    return a
-
-                def return_summed_action():
-                    # sum the current action with the next action
-                    next_action_index = tf.minimum(
-                        i + 1, tf.shape(traj["actions"])[0] - 1
-                    )
-                    summed_action = (
-                        movement_actions[i, :6]
-                        + movement_actions[next_action_index, :6]
-                    )
-                    next_gripper = traj["actions"][next_action_index, 6]
-                    a = tf.concat([summed_action, [next_gripper]], axis=0)
-                    a = tf.ensure_shape(a, (7,))
-                    return a
-
-                return tf.cond(
-                    gripper_changed,
-                    return_current_action,
-                    return_summed_action,
-                )
-
-            new_actions = tf.scan(
-                scan_action,
-                tf.range(tf.shape(traj["actions"])[0]),
-                tf.zeros(7),
-            )
-            traj["actions"] = new_actions
-
-            def scan_obs(prev, i):
-                # gripper window size
-                gripper_window_size = 5
-                gripper_window_start = tf.maximum(0, i - gripper_window_size)
-                gripper_window_end = tf.minimum(
-                    i + gripper_window_size, tf.shape(traj["actions"])[0] - 1
-                )
-
-                gripper_changed = tf.reduce_any(
-                    tf.not_equal(
-                        traj["actions"][gripper_window_start:gripper_window_end, 6],
-                        traj["actions"][i, 6],
-                    )
-                )
-
-                def return_current_obs():
-                    img = traj["next_observations"]["image"][i]
-                    proprio = traj["next_observations"]["proprio"][i]
-                    return img, proprio
-
-                def return_future_obs():
-                    # sum the current action with the next action
-                    next_obs_index = tf.minimum(i + 1, tf.shape(traj["actions"])[0] - 1)
-                    img = traj["next_observations"]["image"][next_obs_index]
-                    proprio = traj["next_observations"]["proprio"][next_obs_index]
-                    return img, proprio
-
-                return tf.cond(
-                    gripper_changed,
-                    return_current_obs,
-                    return_future_obs,
-                )
-
-            new_imgs, new_proprios = tf.scan(
-                scan_obs,
-                tf.range(tf.shape(traj["actions"])[0]),
-                (
-                    traj["next_observations"]["image"][0],
-                    traj["next_observations"]["proprio"][0],
-                ),
-            )
-            traj["next_observations"]["image"] = new_imgs
-            traj["next_observations"]["proprio"] = new_proprios
-
-        else:
-            # actions are based on recorded actions
-            raise NotImplementedError
-
-        return traj
-
     def _sum_actions(self, traj):
         """
         sum the adjacent self.action_merge_horizon actions together
@@ -896,14 +652,6 @@ class BridgeDataset:
                 self.action_merge_horizon - 1 :
             ]
         traj["terminals"] = traj["terminals"][self.action_merge_horizon - 1 :]
-        # for k in traj.keys():
-        #     if k == "actions":
-        #         continue
-        #     elif "observation" in k:
-        #         for sub_k in traj[k].keys():
-        #             traj[k][sub_k] = traj[k][sub_k][self.action_merge_horizon - 1 :]
-        #     else:
-        #         traj[k] = traj[k][self.action_merge_horizon - 1 :]
 
         return traj
 
@@ -935,9 +683,10 @@ class BridgeDataset:
         return traj
 
     def _add_goals(self, traj):
-        traj = GOAL_RELABELING_FUNCTIONS[self.goal_relabeling_strategy](
-            traj, **self.goal_relabeling_kwargs
-        )
+        if self.goal_relabeling_strategy is not None:
+            traj = GOAL_RELABELING_FUNCTIONS[self.goal_relabeling_strategy](
+                traj, **self.goal_relabeling_kwargs
+            )
 
         if self.load_language:
             lang_idx = tf.random.uniform(
