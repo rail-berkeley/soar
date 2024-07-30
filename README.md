@@ -1,4 +1,4 @@
-# SOAR
+# SOAR: Autonomous Improvement of Instruction Following Skills via Foundation Models
 [](media/soar_logo.jpeg)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/rail-berkeley/soar/blob/main/soar_data/load_soar_data.ipynb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
