@@ -455,7 +455,6 @@ class WidowXDataset:
         """
 
         builder = tfds.builder_from_directories(dataset_dir)
-        ignore_errors = False
         force_recompute_dataset_statistics = True
         filter_functions = ()
         proprio_obs_key = "proprio"
@@ -476,8 +475,7 @@ class WidowXDataset:
         full_dataset = dl.DLataset.from_rlds(builder, split="all", shuffle=False)
         for filter_fcn_spec in filter_functions:
             full_dataset = full_dataset.filter(ModuleSpec.instantiate(filter_fcn_spec))
-        if ignore_errors:
-            full_dataset = full_dataset.ignore_errors()
+        full_dataset = full_dataset.ignore_errors()
         full_dataset = full_dataset.traj_map(standardize).filter(is_nonzero_length)
 
         # tries to load from cache, otherwise computes on the fly
