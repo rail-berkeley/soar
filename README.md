@@ -1,10 +1,17 @@
-# SOAR
+# SOAR: Autonomous Improvement of Instruction Following Skills via Foundation Models
 [](media/soar_logo.jpeg)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/rail-berkeley/soar/blob/main/soar_data/load_soar_data.ipynb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Static Badge](https://img.shields.io/badge/Project-Page-a)](https://auto-improvement.github.io/)
 
-Code release for the paper "Autonomous Improvement of Instruction Following Skills via Foundation Models".
+[Zhiyuan Zhou](https://zhouzypaul.github.io/), [Pranav Atreya](https://pranavatreya.github.io/), [Abraham Lee](https://www.linkedin.com/in/abraham-lee-4a0497242?original_referer=https%3A%2F%2Fwww.google.com%2F), [Homer Walke](https://homerwalke.com/), [Oier Mees](https://www.oiermees.com/), [Sergey Levine](https://people.eecs.berkeley.edu/~svlevine/)
+<hr style="border: 2px solid gray;"></hr>
+
+We present SOAR,  an approach to autonomously improve instruction following policies leveraging
+foundation models. SOAR breaks down the autonomous improvement problem into components that import
+Internet-scale knowledge from VLMs and a component that learns from autonomous data with a purely self-supervised objective.
+
+![](media/soar_teaser.png)
 
 This repository contains three components: (1) the VLM powered semantics-aware autonomous data collection pipeline, (2) converting the collected raw data into the RLDS format, and (3) Jax/Flax code for training the policies used in the paper.
 
@@ -50,7 +57,7 @@ pip install --upgrade "jax[tpu]==0.4.20" -f https://storage.googleapis.com/jax-r
 ```
 
 
-## (1) Autonomous Data Collection
+## Autonomous Data Collection
 
 We provide a ready-to-use implementation of autonomous data collection on a fleet of WidowX robot arms. This data collection system is designed around deploying instruction following policies at scale to collect autonomous datasets that are semantically relevant, diverse, and large. Special care is taken to minimize human supervision during data collection, with features like automatic reset detection (and subsequent Slack notification).
 
@@ -63,7 +70,7 @@ python data_collection/orchestrator/robot/main.py --config_dir config/<robot_con
 
 See [data_collection/README.md](data_collection/README.md) for more information on the setup required before running data collection.
 
-## (2) Model Training
+## Model Training
 This directory contains a self-contained python project for training goal-conditioned and language conditioned policies on Bridge and on Soar-Data.
 
 To launch a training run, run:
@@ -73,7 +80,7 @@ bash experiments/scripts/launch.sh
 ```
 This will launch [train.py](model_training/experiments/train.py) with the default arguments specified in [train_config.py](model_training/experiments/configs/train_config.py) and [data_config.py](model_training/experiments/configs/data_config.py).
 
-## (3) RLDS Data Conversion
+## RLDS Data Conversion
 We convert the raw data logged in the `data_collection/*` directories into the commonly used RLDS format. The conversion code is
 located in the `rlds_converter` directory. See [rlds_converter/README.md](rlds_converter/README.md) for more information.
 
@@ -88,7 +95,7 @@ CUDA_VISIBLE_DEVICES="" tfds build --manual_dir <path_to_raw_data>
 @article{zhou2024autonomous,
     title={Autonomous Improvement of Instruction Following Skills via Foundation Models},
     author={Zhiyuan Zhou and Pranav Atreya and Abraham Lee and Homer Walke and Oier Mees and Sergey Levine},
-    journal = {arXiv preprint arXiv:2406.09246},
+    journal = {arXiv preprint arXiv:foo},
     year={2024},
 }
 ```
