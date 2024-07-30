@@ -15,7 +15,7 @@ from ml_collections import config_flags
 from jaxrl_m.agents import agents
 from jaxrl_m.common.common import shard_batch
 from jaxrl_m.common.wandb import WandBLogger
-from jaxrl_m.data.bridge_dataset import BridgeDataset
+from jaxrl_m.data.bridge_dataset import WidowXDataset
 from jaxrl_m.utils.timer_utils import Timer
 from jaxrl_m.utils.train_utils import pretrained_loaders
 from jaxrl_m.vision import encoders
@@ -115,7 +115,7 @@ def main(_):
     if FLAGS.bridgedata_config.sampling_weights.autonomous_data_failures > 0:
         train_data_splits.append("failure")
 
-    train_data = BridgeDataset(
+    train_data = WidowXDataset(
         train_paths,
         FLAGS.config.seed,
         batch_size=FLAGS.config.batch_size,
@@ -124,7 +124,7 @@ def main(_):
         data_splits=train_data_splits,
         **FLAGS.config.dataset_kwargs,
     )
-    val_data = BridgeDataset(
+    val_data = WidowXDataset(
         FLAGS.bridgedata_config.pretraining_data,
         FLAGS.config.seed,
         batch_size=FLAGS.config.batch_size,

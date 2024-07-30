@@ -114,10 +114,10 @@ def _binary_gripper_to_continuous(
     return new_actions
 
 
-class BridgeDataset:
+class WidowXDataset:
     """
-    Fast parallel tf.data.Dataset-based dataloader for a dataset in the
-    BridgeData format. This format consists of TFRecords where each example
+    Fast parallel tf.data.Dataset-based dataloader for BridgeData and SOAR-Data.
+    This format consists of TFRecords where each example
     is one trajectory. See `PROTO_TYPE_SPEC` below for the expected format
     for each example in more detail. See `_process_trajectory` below for
     the output format.
@@ -194,7 +194,7 @@ class BridgeDataset:
         action_merge_horizon: int = 1,
         **kwargs,
     ):
-        logging.warning("Extra kwargs passed to BridgeDataset: %s", kwargs)
+        logging.warning("Extra kwargs passed to WidowXDataset: %s", kwargs)
         if isinstance(data_prefixes[0], str):
             data_prefixes = [data_prefixes]
         if sample_weights is None:

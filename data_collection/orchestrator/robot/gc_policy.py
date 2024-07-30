@@ -1,16 +1,17 @@
 import os
-from typing import Any
+import random
+import time
 import traceback
+from typing import Any
+
 import jax
 import jax.numpy as jnp
 import numpy as np
 import orbax.checkpoint
+
 from jaxrl_m.agents import agents
-from jaxrl_m.data.bridge_dataset import BridgeDataset
 from jaxrl_m.data.text_processing import text_processors
 from jaxrl_m.vision import encoders
-import random
-import time
 
 
 class GCPolicy:
