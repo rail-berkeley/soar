@@ -1,9 +1,14 @@
 # SOAR
+[](media/soar_logo.jpeg)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/rail-berkeley/soar/blob/main/soar_data/load_soar_data.ipynb)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Static Badge](https://img.shields.io/badge/Project-Page-a)](https://auto-improvement.github.io/)
+
 Code release for the paper "Autonomous Improvement of Instruction Following Skills via Foundation Models".
 
-This repository contains two components: (1) the VLM powered semantics-aware autonomous data collection pipeline, (2) converting the collected raw data into the RLDS format, and (3) Jax/Flax code for training the policies used in the paper.
+This repository contains three components: (1) the VLM powered semantics-aware autonomous data collection pipeline, (2) converting the collected raw data into the RLDS format, and (3) Jax/Flax code for training the policies used in the paper.
 
-## SOAR-Data
+## Using SOAR-Data
 
 We have released SOAR-Data for public access [here](https://rail.eecs.berkeley.edu/datasets/soar_release/1.0.0/).
 We also provided a download script to download the dataset in RLDS format, which requires 136G of disk space.
@@ -13,7 +18,37 @@ bash soar_data/download_dataset.sh
 ```
 This script should take around 20 minutes to download if you use the parallel download option, and we recommend downloading inside a tmux session.
 
-To load the dataset for training and other downstream use cases, we have provided a minimal example in [soar_data/load_soar_data.ipynb](soar_data/load_soar_data.ipynb) that loads the dataset and visualizes it.
+To load the dataset for training and other downstream use cases, we have provided a minimal example [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/rail-berkeley/soar/blob/main/soar_data/load_soar_data.ipynb) that loads the dataset and visualizes it.
+
+## Installation
+```bash
+conda create -n soar python=3.10
+conda activate soar
+
+# data collection requirements
+pip install -e data_collection
+pip install -r data_collection/requirements.txt
+
+# model training requirements
+pip install -e model_training
+pip install -r model_training/requirements.txt
+
+# rlds conversion requirements
+pip install -e rlds_converter
+pip install -r rlds_converter/requirements.txt
+```
+
+If you would like to train models with Jax,
+For GPU:
+```bash
+pip install --upgrade "jax[cuda11_pip]==0.4.20" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+```
+
+For TPU:
+```bash
+pip install --upgrade "jax[tpu]==0.4.20" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
+```
+
 
 ## (1) Autonomous Data Collection
 
@@ -21,59 +56,46 @@ We provide a ready-to-use implementation of autonomous data collection on a flee
 
 ![](media/autonomous_data_collection.png)
 
-### Installation
+Run autonomous data collection on the robot with:
 ```
-cd data_collection
-conda create -n orchestrator python=3.10
-conda activate orchestrator
-pip install -r requirements.txt
-pip install -e .
+python data_collection/orchestrator/robot/main.py --config_dir config/<robot_config_dir>
 ```
 
-### VLM Server Hosting
-You have the option to either host CogVLM on a local server for inference, or use GPT-4V/o. This specification can be made in the configs (see `README.md` under `data_collection/config`). If you are running autonomous data collection with multiple robots, you can host the VLM just once, and all data collection scripts will query this server.
+See [data_collection/README.md](data_collection/README.md) for more information on the setup required before running data collection.
 
-If you are hosting CogVLM, make sure the port specified in the last line of the file `data_collection/orchestrator/cogvlm_server/main.py` matches the port specified in `data_collection/config/<robot_name>/cogvlm_server.yaml`. Then, on the machine you want to host the VLM server run `python main.py` from the `data_collection/orchestrator/cogvlm_server` directory. The VLM requires around 48 GB of memory.
+## (2) Model Training
+This directory contains a self-contained python project for training goal-conditioned and language conditioned policies on Bridge and on Soar-Data.
 
-We provide convenience scripts for testing that the VLM has been hosted correctly and for setting up a proxy server (i.e., to get around firewalls) which are located in the same directory.
-
-### OpenAI API Key
-
-Make sure to specify your OpenAI API key as an environment variable with the name `OPENAI_API_KEY`. It is likely convenient to include this specification in your `.bashrc` file.
-
-### SuSIE Server
-
-Similar to the VLM server, you will need to host the SuSIE model on a machine accessible to the robot machines. The memory requirement is much more modest, taking up around 6 GB. Make sure the port specified in the last line of the file `data_collection/orchestrator/susie_server/main.py` matches the port specified in the config `data_collection/config/<robot_name>/subgoal_predictor.yaml`. To launch the SuSIE server, run `python orchestrator/susie_server/main.py --config_dir config/<robot_config_dir>` from the `data_collection` directory, specifying the path to the folder containing your robot's configs.
-
-### Web Viewer
-
-To make it convenient to monitor your robots from anywhere, we include a Flask web server with a simple front-end displaying video streamed by your robots. It is mandatory to launch the web server. There are two parts to launching this web viewer: (1) launch the Flask server on a central machine, and (2) launch the data streaming RosPy script on each of your robots.
-
-To launch the Flask web server, run `python app.py` from the directory `data_collection/orchestrator/web_viewer`. The default port for the web server is `5000`, which can be adjusted in the last line of the file `app.py`.
-
-Separately on your robot machine (the machine where you are running the docker container and action server from `bridge_data_robot`), launch the script `python orchestrator/web_viewer/ros_client/run_client.py --config_dir config/<robot_config_dir>` from the `data_collection` directory, making sure the specify the path to the appropriate configuration directory. This command should be run after the docker container and action server from `bridge_data_robot` have been launched (see the README in the `bridge_data_robot` repo for more instructions).
-
-### Pre-data collection: Setting Workspace Boundaries for Robot
-
-The final step before launching data collection is to specify the workspace boundaries for your robot. Specifying workspace boundaries (as the dimensions of an invisible rectangular prism the end-effector is forced to stay inside of) helps with safe robot operation and minimizes the chances that the robot will do something requiring a manual environment reset.
-
-Run the script `python orchestrator/set_workspace_bounds/teleop.py --config_dir config/<robot_config_dir>` from the `data_collection` directory. This will instantiate a keyboard teleop script (the key controls of which will be printed once you run the script). You should then teleop the end-effector to the extremums of your workspace. Hitting `q` will terminate the script, and print out the minimum and maximim `x`, `y`, and `z` values defining the invisible rectangular prism boundary. You should enter these values in your robot `general_params` config file: `data_collection/config/<robot_config_dir>/general_params.yaml`.
-
-### Running the Robot
-
-Finally you are ready to run autonomous data collection on the robot! Simply run the following script:
+To launch a training run, run:
+```bash
+cd model_training
+bash experiments/scripts/launch.sh
 ```
-python orchestrator/robot/main.py --config_dir config/<robot_config_dir>
-```
-from the `data_collection` directory. The script `main.py` contains the code for iterating through the full autonomous data collection loop: querying the VLM for which task to command, querying the SuSIE server for a subgoal image, rolling out the policy, querying the VLM for success determination, and logging. You should be able to keep this script and the robot running for many hours at a time, potentially periodically resetting a fallen object in the robot's environment.
+This will launch [train.py](model_training/experiments/train.py) with the default arguments specified in [train_config.py](model_training/experiments/configs/train_config.py) and [data_config.py](model_training/experiments/configs/data_config.py).
 
-## Model Training
-
-## RLDS Data Conversion
+## (3) RLDS Data Conversion
 We convert the raw data logged in the `data_collection/*` directories into the commonly used RLDS format. The conversion code is
 located in the `rlds_converter` directory. See [rlds_converter/README.md](rlds_converter/README.md) for more information.
 
+To build the SOAR dataset
+```bash
+cd rlds_converter/soar_dataset
+CUDA_VISIBLE_DEVICES="" tfds build --manual_dir <path_to_raw_data>
+```
+
+## Citation
+```
+@article{zhou2024autonomous,
+    title={Autonomous Improvement of Instruction Following Skills via Foundation Models},
+    author={Zhiyuan Zhou and Pranav Atreya and Abraham Lee and Homer Walke and Oier Mees and Sergey Levine},
+    journal = {arXiv preprint arXiv:2406.09246},
+    year={2024},
+}
+```
+
 ## Contributing
+We welcome pull requests and bug reports to this repo.
+
 To enable code checks and auto-formatting, please install pre-commit hooks (run this in the root directory):
 ```bash
 pre-commit install

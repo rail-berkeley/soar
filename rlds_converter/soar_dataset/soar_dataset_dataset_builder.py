@@ -7,7 +7,6 @@ import tensorflow_datasets as tfds
 from absl import logging
 from dataset_builder import MultiThreadedDatasetBuilder
 
-# we ignore the small amount of data that contains >4 views
 IMAGE_SIZE = (256, 256)
 TRAIN_PROPORTION = 1.0
 

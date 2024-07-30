@@ -1,5 +1,0 @@
----
-# Config parameters for local checkpoint updating
-src_checkpoint_root_folder: "gs://paul-v4-central2-b/jaxrl_log/jaxrl_calql_bridge_online/checkpoint_0/"
-dest_checkpoint_path: "checkpoints/online-calql"
-wait_time: 5 # minutes

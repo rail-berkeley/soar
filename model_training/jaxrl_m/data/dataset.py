@@ -114,10 +114,10 @@ def _binary_gripper_to_continuous(
     return new_actions
 
 
-class BridgeDataset:
+class WidowXDataset:
     """
-    Fast parallel tf.data.Dataset-based dataloader for a dataset in the
-    BridgeData format. This format consists of TFRecords where each example
+    Fast parallel tf.data.Dataset-based dataloader for BridgeData and SOAR-Data.
+    This format consists of TFRecords where each example
     is one trajectory. See `PROTO_TYPE_SPEC` below for the expected format
     for each example in more detail. See `_process_trajectory` below for
     the output format.
@@ -127,12 +127,11 @@ class BridgeDataset:
     0 when the next_obs is labeled as the goal, -1 otherwise.
 
     Args:
-        data_paths: List of data prefix to the data files. If a list of list of paths
+        data_prefixes: List of data prefix to the data files. If a list of list of paths
             is provided, the data will be sampled from each sub-list according
             to "sample_weights".
         seed: Random seed.
-        action_proprio_metadata: Dictionary containing metadata of the actions and proprio.
-            If provided, actions and proprio will be normalized.
+        skip_normalization: Whether to skip normalization of actions and proprio.
         normalization_type: The type of normalization to apply to the actions
             and proprio.
         action_clip_delta: If normalization bounds the agent to certain range, this
@@ -160,6 +159,9 @@ class BridgeDataset:
         obs_horizon: Number of consecutive observations that will be conditioned on.
         load_langauge: Whether to look for and load language from the data.
         skip_unlabeled: Whether to filter out trajectories not labeled with language.
+        gripper_action_mean: Mean of the continuous gripper action distribution.
+        gripper_action_std: Standard deviation of the continuous gripper action distribution.
+        return_entire_trajectory: Whether to return the entire trajectory as a batch.
         action_merge_horizon: if > 1, sum actions over this many steps.
     """
 
@@ -192,7 +194,7 @@ class BridgeDataset:
         action_merge_horizon: int = 1,
         **kwargs,
     ):
-        logging.warning("Extra kwargs passed to BridgeDataset: %s", kwargs)
+        logging.warning("Extra kwargs passed to WidowXDataset: %s", kwargs)
         if isinstance(data_prefixes[0], str):
             data_prefixes = [data_prefixes]
         if sample_weights is None:
@@ -453,7 +455,6 @@ class BridgeDataset:
         """
 
         builder = tfds.builder_from_directories(dataset_dir)
-        ignore_errors = False
         force_recompute_dataset_statistics = True
         filter_functions = ()
         proprio_obs_key = "proprio"
@@ -474,8 +475,7 @@ class BridgeDataset:
         full_dataset = dl.DLataset.from_rlds(builder, split="all", shuffle=False)
         for filter_fcn_spec in filter_functions:
             full_dataset = full_dataset.filter(ModuleSpec.instantiate(filter_fcn_spec))
-        if ignore_errors:
-            full_dataset = full_dataset.ignore_errors()
+        full_dataset = full_dataset.ignore_errors()
         full_dataset = full_dataset.traj_map(standardize).filter(is_nonzero_length)
 
         # tries to load from cache, otherwise computes on the fly

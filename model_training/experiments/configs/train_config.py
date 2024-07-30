@@ -10,7 +10,7 @@ def get_config(config_string):
         save_interval=25000,
         num_val_trajs=8,
         num_val_batches=8,
-        save_dir="gs://paul-v4-central2-b/jaxrl_log",
+        save_dir="~/jaxrl_log",
         resume_path="",
         seed=42,
     )

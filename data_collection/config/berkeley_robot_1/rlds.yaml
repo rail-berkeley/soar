@@ -1,5 +1,0 @@
----
-# Config parameters of autonomous dataset conversion to RLDS
-rlds_dataset_path: "rlds_logs"
-cloud_upload_wait_time: 3 # minutes
-cloud_upload_dir: "gs://paul-v4-central2-b/autonomous_improvement/stable_calql/green-stick-wooden-bowl/"
