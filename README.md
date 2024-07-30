@@ -68,7 +68,8 @@ This directory contains a self-contained python project for training goal-condit
 
 To launch a training run, run:
 ```bash
-bash model_training/experiments/scripts/launch.sh
+cd model_training
+bash experiments/scripts/launch.sh
 ```
 This will launch [train.py](model_training/experiments/train.py) with the default arguments specified in [train_config.py](model_training/experiments/configs/train_config.py) and [data_config.py](model_training/experiments/configs/data_config.py).
 

@@ -42,7 +42,7 @@ config_flags.DEFINE_config_file(
 )
 
 config_flags.DEFINE_config_file(
-    "bridgedata_config",
+    "data_config",
     None,
     "File path to the bridgedata configuration.",
     lock_config=False,
@@ -86,18 +86,18 @@ def main(_):
     # load datasets
     random.seed(FLAGS.config.seed)
     train_paths = []
-    if FLAGS.bridgedata_config.sampling_weights.pretraining_data > 0:
-        train_paths += [FLAGS.bridgedata_config.pretraining_data]
-    if FLAGS.bridgedata_config.sampling_weights.autonomous_data_successes > 0:
-        train_paths += [FLAGS.bridgedata_config.autonomous_data]
-    if FLAGS.bridgedata_config.sampling_weights.autonomous_data_failures > 0:
-        train_paths += [FLAGS.bridgedata_config.autonomous_data]
+    if FLAGS.data_config.sampling_weights.pretraining_data > 0:
+        train_paths += [FLAGS.data_config.pretraining_data]
+    if FLAGS.data_config.sampling_weights.autonomous_data_successes > 0:
+        train_paths += [FLAGS.data_config.autonomous_data]
+    if FLAGS.data_config.sampling_weights.autonomous_data_failures > 0:
+        train_paths += [FLAGS.data_config.autonomous_data]
 
     # create sample weights for training
     train_sample_weights = [
-        FLAGS.bridgedata_config.sampling_weights["pretraining_data"],
-        FLAGS.bridgedata_config.sampling_weights["autonomous_data_successes"],
-        FLAGS.bridgedata_config.sampling_weights["autonomous_data_failures"],
+        FLAGS.data_config.sampling_weights["pretraining_data"],
+        FLAGS.data_config.sampling_weights["autonomous_data_successes"],
+        FLAGS.data_config.sampling_weights["autonomous_data_failures"],
     ]
     train_sample_weights = [
         weight for weight in train_sample_weights if weight > 0
@@ -108,11 +108,11 @@ def main(_):
 
     # pick out the splits needed from the dataset
     train_data_splits = []
-    if FLAGS.bridgedata_config.sampling_weights.pretraining_data > 0:
+    if FLAGS.data_config.sampling_weights.pretraining_data > 0:
         train_data_splits.append("train")
-    if FLAGS.bridgedata_config.sampling_weights.autonomous_data_successes > 0:
+    if FLAGS.data_config.sampling_weights.autonomous_data_successes > 0:
         train_data_splits.append("success")
-    if FLAGS.bridgedata_config.sampling_weights.autonomous_data_failures > 0:
+    if FLAGS.data_config.sampling_weights.autonomous_data_failures > 0:
         train_data_splits.append("failure")
 
     train_data = WidowXDataset(
@@ -125,7 +125,7 @@ def main(_):
         **FLAGS.config.dataset_kwargs,
     )
     val_data = WidowXDataset(
-        FLAGS.bridgedata_config.pretraining_data,
+        FLAGS.data_config.pretraining_data,
         FLAGS.config.seed,
         batch_size=FLAGS.config.batch_size,
         train=False,

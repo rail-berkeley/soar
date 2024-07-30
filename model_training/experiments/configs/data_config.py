@@ -73,9 +73,9 @@ def get_config(config_string):
                 ],
                 "exclude": [],
                 "sampling_weights": {
-                    "pretraining_data": 0.0,
-                    "autonomous_data_successes": 0.5,
-                    "autonomous_data_failures": 0.5,
+                    "pretraining_data": 0.8,
+                    "autonomous_data_successes": 0.2,
+                    "autonomous_data_failures": 0.0,
                 },
             }
         ),
