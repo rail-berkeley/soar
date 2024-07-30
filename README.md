@@ -1,4 +1,5 @@
-# [](media/soar_logo.jpeg) SOAR
+# SOAR
+[](media/soar_logo.jpeg)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/rail-berkeley/soar/blob/main/soar_data/load_soar_data.ipynb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Static Badge](https://img.shields.io/badge/Project-Page-a)](https://auto-improvement.github.io/)
@@ -62,7 +63,7 @@ python data_collection/orchestrator/robot/main.py --config_dir config/<robot_con
 
 See [data_collection/README.md](data_collection/README.md) for more information on the setup required before running data collection.
 
-## Model Training
+## (2) Model Training
 This directory contains a self-contained python project for training goal-conditioned and language conditioned policies on Bridge and on Soar-Data.
 
 To launch a training run, run:
@@ -71,7 +72,7 @@ bash model_training/experiments/scripts/launch.sh
 ```
 This will launch [train.py](model_training/experiments/train.py) with the default arguments specified in [train_config.py](model_training/experiments/configs/train_config.py) and [data_config.py](model_training/experiments/configs/data_config.py).
 
-## RLDS Data Conversion
+## (3) RLDS Data Conversion
 We convert the raw data logged in the `data_collection/*` directories into the commonly used RLDS format. The conversion code is
 located in the `rlds_converter` directory. See [rlds_converter/README.md](rlds_converter/README.md) for more information.
 
@@ -82,12 +83,14 @@ CUDA_VISIBLE_DEVICES="" tfds build --manual_dir <path_to_raw_data>
 ```
 
 ## Citation
+```
 @article{zhou2024autonomous,
     title={Autonomous Improvement of Instruction Following Skills via Foundation Models},
     author={Zhiyuan Zhou and Pranav Atreya and Abraham Lee and Homer Walke and Oier Mees and Sergey Levine},
     journal = {arXiv preprint arXiv:2406.09246},
     year={2024},
 }
+```
 
 ## Contributing
 We welcome pull requests and bug reports to this repo.
