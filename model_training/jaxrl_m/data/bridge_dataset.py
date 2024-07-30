@@ -127,12 +127,11 @@ class BridgeDataset:
     0 when the next_obs is labeled as the goal, -1 otherwise.
 
     Args:
-        data_paths: List of data prefix to the data files. If a list of list of paths
+        data_prefixes: List of data prefix to the data files. If a list of list of paths
             is provided, the data will be sampled from each sub-list according
             to "sample_weights".
         seed: Random seed.
-        action_proprio_metadata: Dictionary containing metadata of the actions and proprio.
-            If provided, actions and proprio will be normalized.
+        skip_normalization: Whether to skip normalization of actions and proprio.
         normalization_type: The type of normalization to apply to the actions
             and proprio.
         action_clip_delta: If normalization bounds the agent to certain range, this
@@ -160,6 +159,9 @@ class BridgeDataset:
         obs_horizon: Number of consecutive observations that will be conditioned on.
         load_langauge: Whether to look for and load language from the data.
         skip_unlabeled: Whether to filter out trajectories not labeled with language.
+        gripper_action_mean: Mean of the continuous gripper action distribution.
+        gripper_action_std: Standard deviation of the continuous gripper action distribution.
+        return_entire_trajectory: Whether to return the entire trajectory as a batch.
         action_merge_horizon: if > 1, sum actions over this many steps.
     """
 
