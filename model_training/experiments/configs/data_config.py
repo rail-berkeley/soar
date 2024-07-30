@@ -66,10 +66,10 @@ def get_config(config_string):
         "all": ml_collections.ConfigDict(
             {
                 "pretraining_data": [
-                    "gs://rail-orca-central2/resize_256_256/bridge_dataset/1.0.0"
+                    "gs://gresearch/robotics/bridge/0.1.0/"
                 ],
                 "autonomous_data": [
-                    "gs://autonomous-improvement/rlds_data/robot_4_drawer"
+                    "~/soar_data"
                 ],
                 "exclude": [],
                 "sampling_weights": {

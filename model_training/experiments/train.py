@@ -15,7 +15,7 @@ from ml_collections import config_flags
 from jaxrl_m.agents import agents
 from jaxrl_m.common.common import shard_batch
 from jaxrl_m.common.wandb import WandBLogger
-from jaxrl_m.data.bridge_dataset import WidowXDataset
+from model_training.jaxrl_m.data.dataset import WidowXDataset
 from jaxrl_m.utils.timer_utils import Timer
 from jaxrl_m.utils.train_utils import pretrained_loaders
 from jaxrl_m.vision import encoders
