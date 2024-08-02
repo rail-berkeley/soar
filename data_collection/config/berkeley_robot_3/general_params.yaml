@@ -28,7 +28,7 @@ env_params:
       - 1.57
       - 0
   move_duration: 0.3
-video_save_path: "data_collection_logs/berkeley_robot_3/lcbc_evals"
+video_save_path: "data_collection_logs/berkeley_robot_3/randomized_task_proposer"
 shoulder_camera_image_size: 256 # size of image returned by shoulder cam
 initial_eep:
   - 0.3

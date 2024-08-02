@@ -6,7 +6,6 @@ import flax.linen as nn
 import jax.numpy as jnp
 
 from jaxrl_m.common.common import default_init
-from jaxrl_m.networks.distributional import hl_gauss_transform
 
 
 class ValueCritic(nn.Module):

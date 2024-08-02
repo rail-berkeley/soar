@@ -33,13 +33,13 @@ To load the dataset for training and other downstream use cases, we have provide
 conda create -n soar python=3.10
 conda activate soar
 
-# data collection requirements
-pip install -e data_collection
-pip install -r data_collection/requirements.txt
-
 # model training requirements
 pip install -e model_training
 pip install -r model_training/requirements.txt
+
+# data collection requirements (you also need the jaxrl_m library above)
+pip install -e data_collection
+pip install -r data_collection/requirements.txt
 
 # rlds conversion requirements
 pip install -e rlds_converter
