@@ -118,6 +118,15 @@ class ProposerWithCounters(ProposerFromTaskList):
 
         self.task_attempted_counter[task_idx] += 1
         self.task_success_counter[task_idx] += completion_info["success"] == True
+        
+        
+class RandomTaskProposer(ProposerWithCounters):
+    """
+    This proposer will randomly select a task from the list of possible tasks
+    """
+
+    def propose_task(self, image_obs: np.ndarray, off_limits_objects=None):
+        return random.choice(self.possible_tasks)
 
 
 class CyclingTaskProposer(ProposerWithCounters):
@@ -359,4 +368,5 @@ task_proposers = {
     "cogvlm": HistoryAwareVLMTaskProposer,
     "gpt4v": HistoryAwareVLMTaskProposer,
     "cycling": CyclingTaskProposer,
+    "random": RandomTaskProposer,
 }
