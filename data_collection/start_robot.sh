@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# check that OPENAI_API_KEY is set
+if [ -z "$OPENAI_API_KEY" ]; then
+  echo "OPENAI_API_KEY is not set. Please set it before running the script."
+  exit 1
+fi
+
 # Check if the first argument is provided
 if [ -z "$1" ]; then
   echo "No argument provided. Please provide a number between 0 and 4."
