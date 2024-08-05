@@ -4,7 +4,6 @@ import flax.linen as nn
 import jax.numpy as jnp
 
 from jaxrl_m.common.common import default_init
-from jaxrl_m.networks.normalization import ScaleNorm
 
 
 class MLP(nn.Module):

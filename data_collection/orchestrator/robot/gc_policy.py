@@ -127,8 +127,8 @@ class GCPolicy:
         ), "Bad input goal image shape"
 
         action, action_mode = self.agent.sample_actions(
-            obs_image[np.newaxis, ...],
-            goal_image[np.newaxis, ...],
+            {"image" : obs_image[np.newaxis, ...]},
+            {"image" : goal_image[np.newaxis, ...]}, 
             argmax=deterministic,
             seed=None if deterministic else jax.random.PRNGKey(int(time.time())),
         )
@@ -139,8 +139,6 @@ class GCPolicy:
         action[3] = action_mode[3]  # yaw
         action[4] = action_mode[4]  # pitch
         action[-1] = action_mode[-1]  # gripper
-
-        print("Commanded gripper action:", action[-1].item())
 
         # Scale action
         action[:6] = np.array(self.action_statistics["std"][:6]) * action[
@@ -334,8 +332,6 @@ class LCPolicy:
         action[3] = action_mode[3]  # yaw
         action[4] = action_mode[4]  # pitch
         action[-1] = action_mode[-1]  # gripper
-
-        print("Commanded gripper action:", action[-1].item())
 
         # Scale action
         action = np.array(self.action_statistics["std"]) * action + np.array(

@@ -10,7 +10,7 @@ tqdm >= 4.60.0
 chex==0.1.85
 optax==0.1.5
 absl-py >= 0.12.0
-scipy == 1.11.2
+scipy == 1.12.0
 wandb >= 0.12.14
 tensorflow==2.15.0
 einops >= 0.6.1
@@ -19,5 +19,6 @@ moviepy >= 1.0.3
 pre-commit == 3.3.3
 overrides==7.7.0
 tensorflow_probability==0.23.0
+tensorflow_text
 dlimp @ git+https://github.com/zhouzypaul/dlimp@2df85dc98a7d564fc9c7c5ff2bfda26361526483
 octo @ git+https://github.com/octo-models/octo.git
