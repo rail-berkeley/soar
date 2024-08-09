@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Optional
 
 import distrax
@@ -54,103 +53,6 @@ class Critic(nn.Module):
         else:
             value = nn.Dense(1, kernel_init=default_init())(outputs)
         return jnp.squeeze(value, -1)
-
-
-class DistributionalCritic(nn.Module):
-    encoder: Optional[nn.Module]
-    network: nn.Module
-    q_low: float
-    q_high: float
-    num_bins: int = 51
-    init_final: Optional[float] = None
-    network_separate_action_input: bool = (
-        False  # input action to every layer (e.g. PTR)
-    )
-    kernel_init_type: Optional[str] = None
-
-    def setup(self) -> None:
-        self.init_fn = default_init
-        # set up the histogram loss transform
-        self.target_to_probs, self.probs_to_target = hl_gauss_transform(
-            self.q_low, self.q_high, self.num_bins
-        )
-
-        return super().setup()
-
-    @nn.compact
-    def __call__(
-        self, observations: jnp.ndarray, actions: jnp.ndarray, train: bool = False
-    ) -> jnp.ndarray:
-        if self.encoder is None:
-            obs_enc = observations
-        else:
-            obs_enc = self.encoder(observations)
-
-        if self.network_separate_action_input:
-            outputs = self.network(obs_enc, actions, train=train)
-        else:
-            inputs = jnp.concatenate([obs_enc, actions], -1)
-            outputs = self.network(inputs, train=train)
-        if self.init_final is not None:
-            logits = nn.Dense(
-                self.num_bins,
-                kernel_init=nn.initializers.uniform(-self.init_final, self.init_final),
-            )(outputs)
-        else:
-            logits = nn.Dense(self.num_bins, kernel_init=self.init_fn())(outputs)
-
-        # apply softmax
-        probs = nn.softmax(logits, axis=-1)
-        probs_mean = self.probs_to_target(probs)
-
-        return probs_mean, logits
-
-
-class ContrastiveCritic(nn.Module):
-    encoder: nn.Module
-    sa_net: nn.Module
-    g_net: nn.Module
-    repr_dim: int = 16
-    twin_q: bool = True
-    sa_net2: Optional[nn.Module] = None
-    g_net2: Optional[nn.Module] = None
-    init_final: Optional[float] = None
-
-    @nn.compact
-    def __call__(
-        self, observations: jnp.ndarray, actions: jnp.ndarray, train: bool = False
-    ) -> jnp.ndarray:
-        obs_goal_encoding = self.encoder(observations)
-        encoding_dim = obs_goal_encoding.shape[-1] // 2
-        obs_encoding, goal_encoding = (
-            obs_goal_encoding[..., :encoding_dim],
-            obs_goal_encoding[..., encoding_dim:],
-        )
-
-        if self.init_final is not None:
-            kernel_init = partial(
-                nn.initializers.uniform, -self.init_final, self.init_final
-            )
-        else:
-            kernel_init = default_init
-
-        sa_inputs = jnp.concatenate([obs_encoding, actions], -1)
-        sa_repr = self.sa_net(sa_inputs, train=train)
-        sa_repr = nn.Dense(self.repr_dim, kernel_init=kernel_init())(sa_repr)
-        g_repr = self.g_net(goal_encoding, train=train)
-        g_repr = nn.Dense(self.repr_dim, kernel_init=kernel_init())(g_repr)
-        outer = jnp.einsum("ik,jk->ij", sa_repr, g_repr)
-
-        if self.twin_q:
-            sa_repr2 = self.sa_net2(sa_inputs, train=train)
-            sa_repr2 = nn.Dense(self.repr_dim, kernel_init=kernel_init())(sa_repr2)
-            g_repr2 = self.g_net2(goal_encoding, train=train)
-            g_repr2 = nn.Dense(self.repr_dim, kernel_init=kernel_init())(g_repr2)
-            outer2 = jnp.einsum("ik,jk->ij", sa_repr2, g_repr2)
-
-            outer = jnp.stack([outer, outer2], axis=-1)
-
-        return outer
 
 
 def ensemblize(cls, num_qs, out_axes=0):
