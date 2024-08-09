@@ -17,7 +17,6 @@ from jaxrl_m.common.common import shard_batch
 from jaxrl_m.common.wandb import WandBLogger
 from model_training.jaxrl_m.data.dataset import WidowXDataset
 from jaxrl_m.utils.timer_utils import Timer
-from jaxrl_m.utils.train_utils import pretrained_loaders
 from jaxrl_m.vision import encoders
 
 try:
@@ -157,11 +156,6 @@ def main(_):
         encoder_def=encoder_def,
         **FLAGS.config.agent_kwargs,
     )
-    for loader_name, loader_kwargs in FLAGS.config.pretrained_loaders:
-        loader = partial(pretrained_loaders[loader_name], **loader_kwargs)
-        agent = agent.replace(
-            state=agent.state.replace(params=loader(agent.state.params))
-        )
     if FLAGS.config.get("resume_path", "") != "":
         agent = checkpoints.restore_checkpoint(FLAGS.config.resume_path, target=agent)
     # replicate agent across devices

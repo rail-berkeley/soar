@@ -1,14 +1,10 @@
 from collections.abc import Mapping
 
 import imageio
-import jax.numpy as jnp
 import numpy as np
 import tensorflow as tf
 import wandb
 from flax.core import frozen_dict
-from flax.training import checkpoints
-
-from jaxrl_m.vision.bigvision_resnetv2 import load
 
 
 def concatenate_batches(batches):
@@ -48,63 +44,3 @@ def load_recorded_video(
         assert video.shape[1] == 3, "Numpy array should be (T, C, H, W)"
 
     return wandb.Video(video, fps=20)
-
-
-def bigvision_resnet_loader(params, modules, checkpoint_path):
-    params = frozen_dict.unfreeze(params)
-    for module in modules:
-        params[module]["encoder"]["encoder"] = load(
-            params[module]["encoder"]["encoder"],
-            checkpoint_path,
-            dont_load=["head/bias", "head/kernel"],
-        )
-    return frozen_dict.freeze(params)
-
-
-def bigvision_resnet_gc_loader(
-    params, modules, checkpoint_path, clone_new_weights=True
-):
-    params = frozen_dict.unfreeze(params)
-    for module in modules:
-        encoder_params = load(
-            params[module]["encoder"]["encoder"],
-            checkpoint_path,
-            dont_load=["head/bias", "head/kernel"],
-        )
-        if clone_new_weights:
-            encoder_params["root_block"]["conv_root"]["kernel"] = (
-                jnp.concatenate(
-                    [encoder_params["root_block"]["conv_root"]["kernel"]] * 2, axis=2
-                )
-                / 2
-            )
-        else:
-            encoder_params["root_block"]["conv_root"]["kernel"] = jnp.concatenate(
-                [
-                    encoder_params["root_block"]["conv_root"]["kernel"],
-                    jnp.zeros_like(encoder_params["root_block"]["conv_root"]["kernel"]),
-                ],
-                axis=2,
-            )
-
-    return frozen_dict.freeze(params)
-
-
-def calql_dr3_resnet_gc_loader(params, checkpoint_path):
-    params = frozen_dict.unfreeze(params)
-    restored_agent = checkpoints.restore_checkpoint(checkpoint_path, target=None)
-    params["actor"]["encoder"]["encoder"] = restored_agent["actor"]["encoder"][
-        "encoder"
-    ]
-    params["critic"]["encoder"]["encoder"] = restored_agent["critic"]["encoder"][
-        "encoder"
-    ]
-    params = frozen_dict.freeze(params)
-    return params
-
-
-pretrained_loaders = dict(
-    bigvision_resnet=bigvision_resnet_loader,
-    bigvision_resnet_gc=bigvision_resnet_gc_loader,
-    calql_dr3_resnet_gc=calql_dr3_resnet_gc_loader,
-)
