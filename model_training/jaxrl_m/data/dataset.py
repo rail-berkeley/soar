@@ -27,7 +27,7 @@ def glob_to_path_list(
         glob_strs = [glob_strs]
     path_list = []
     for glob_str in glob_strs:
-        paths = tf.io.gfile.glob(f"{prefix}/{glob_str}")
+        paths = tf.io.gfile.glob(os.path.join(prefix, glob_str))
         filtered_paths = []
         for path in paths:
             if not any(fnmatch.fnmatch(path, e) for e in exclude):
@@ -206,6 +206,9 @@ class WidowXDataset:
             data_splits = [None] * len(data_prefixes)
         else:
             assert len(data_splits) == len(data_prefixes)
+            assert all(
+                split in ["train", "val", "success", "failure"] for split in data_splits
+            ), f"Invalid data split: {data_splits}"
 
         self.data_splits = data_splits
         self.relabel_actions = relabel_actions

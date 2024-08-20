@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import ml_collections
 
@@ -69,7 +71,7 @@ def get_config(config_string):
                     "gs://gresearch/robotics/bridge/0.1.0/"
                 ],
                 "autonomous_data": [
-                    "~/soar_data"
+                    os.path.expanduser("~/tensorflow_datasets/soar_dataset/1.0.0"),
                 ],
                 "exclude": [],
                 "sampling_weights": {
