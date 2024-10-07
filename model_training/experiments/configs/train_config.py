@@ -46,14 +46,13 @@ def get_config(config_string):
                             256,
                             256,
                             256,
-                            256,
-                        ),  # diff: bridge release use 3 * 256
-                        dropout_rate=0,  # diff: bridge release use 0.1
+                        ),
+                        dropout_rate=0.1,
                     ),
                     policy_kwargs=dict(
-                        tanh_squash_distribution=True,  # diff: bridge release use MSE head
+                        tanh_squash_distribution=True,
                         std_parameterization="fixed",
-                        fixed_std=[1, 1, 1, 1, 1, 1, 1],
+                        fixed_std=[1, 1, 1, 1, 1, 1, 0.1],
                     ),
                     early_goal_concat=True,
                     shared_goal_encoder=True,
