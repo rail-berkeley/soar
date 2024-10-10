@@ -1,7 +1,7 @@
 ---
 general_params: !include general_params.yaml
 task_proposer_params: !include task_proposer.yaml
-gc_policy_params: !include cdm_plus_gcbc.yaml
+gc_policy_params: !include gc_bc.yaml
 subgoal_predictor_params: !include subgoal_predictor.yaml
 reset_detector_params: !include reset_detector.yaml
 success_detector_params: !include success_detector.yaml
