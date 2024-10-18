@@ -230,7 +230,14 @@ class WidowXDataset:
         self.action_merge_horizon = action_merge_horizon
 
         if self.load_language:
-            self.PROTO_TYPE_SPEC["language"] = tf.string
+            self.PROTO_TYPE_SPEC[
+                "steps/language_instruction"
+            ] = tf.io.FixedLenSequenceFeature(
+                [],
+                dtype=tf.string,
+                default_value="default",
+                allow_missing=True,
+            )
 
         # construct a dataset for each sub-list of paths
         datasets = []
@@ -380,6 +387,11 @@ class WidowXDataset:
         )
         actions_reshaped = tf.reshape(parsed_features["steps/action"], [-1, 7])
 
+        # language instruction
+        language_instruction = tf.strings.as_string(
+            parsed_features["steps/language_instruction"]
+        )
+
         # restructure the dictionary into the downstream format
         return {
             "observations": {
@@ -392,6 +404,7 @@ class WidowXDataset:
             },
             "actions": actions_reshaped[:-1],
             "terminals": tf.zeros_like(actions_reshaped[:-1][:, 0]),
+            **({"language": language_instruction[:-1]} if self.load_language else {}),
         }
 
     def _process_actions(

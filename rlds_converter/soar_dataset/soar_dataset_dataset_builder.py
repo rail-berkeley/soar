@@ -64,7 +64,7 @@ def process_actions(path):
 
 
 def process_lang(path):
-    fp = os.path.join(path, "language_text.txt")
+    fp = os.path.join(path, "language_task.txt")
     text = ""  # empty string is a placeholder for missing text
     if os.path.exists(fp):
         with open(fp, "r") as f:
@@ -196,6 +196,9 @@ class SOARDataset(MultiThreadedDatasetBuilder):
         )
 
         instruction = out["lang"]
+        assert (
+            instruction != ""
+        ), f"Empty instruction at {path}"  # all SOAR data have language
 
         # assemble episode
         episode = []
