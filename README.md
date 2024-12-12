@@ -1,6 +1,6 @@
 # SOAR: Autonomous Improvement of Instruction Following Skills via Foundation Models
 [](media/soar_logo.jpeg)
-[![arXiv](https://img.shields.io/badge/arXiv-2407.08693-df2a2a.svg)](https://arxiv.org/pdf/2407.20635)
+[![arXiv](https://img.shields.io/badge/arXiv-2407.20635-df2a2a.svg)](https://arxiv.org/pdf/2407.20635)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/rail-berkeley/soar/blob/main/soar_data/load_soar_data.ipynb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Static Badge](https://img.shields.io/badge/Project-Page-a)](https://auto-improvement.github.io/)
