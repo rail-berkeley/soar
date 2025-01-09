@@ -18,7 +18,7 @@ This repository contains three components: (1) the VLM powered semantics-aware a
 
 ## Using SOAR-Data
 
-We have released SOAR-Data for public access [here](https://rail.eecs.berkeley.edu/datasets/soar_release/1.0.0/).
+We have released SOAR-Data for public access [here](https://rail.eecs.berkeley.edu/datasets/soar_release/1.0.0/) in RLDS format. (The raw data is also available [here](https://rail.eecs.berkeley.edu/datasets/soar_release/numpy_source/soar-dataset-local/))
 We also provided a download script to download the dataset in RLDS format, which requires 136G of disk space.
 In this directory, run
 ```bash
