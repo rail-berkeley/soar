@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Allow overriding variables from the command line
-SAVE_DIR="${SAVE_DIR:-~/soar_data}"
+SAVE_DIR="${SAVE_DIR:-$HOME/soar_data}"
 REQUIRED_SPACE_GB="${REQUIRED_SPACE_GB:-140}"
 URL_FILE="${URL_FILE:-soar_data/urls.txt}"
 
