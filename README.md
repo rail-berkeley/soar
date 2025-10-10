@@ -18,15 +18,16 @@ This repository contains three components: (1) the VLM powered semantics-aware a
 
 ## Using SOAR-Data
 
-We have released SOAR-Data for public access [here](https://rail.eecs.berkeley.edu/datasets/soar_release/1.0.0/) in RLDS format. (The raw data is also available [here](https://rail.eecs.berkeley.edu/datasets/soar_release/numpy_source/soar-dataset-local/))
-We also provided a download script to download the dataset in RLDS format, which requires 136G of disk space.
-In this directory, run
-```bash
-bash soar_data/download_dataset.sh
-```
-This script should take around 20 minutes to download if you use the parallel download option, and we recommend downloading inside a tmux session.
+We have released SOAR-Data for public access [here](https://rail.eecs.berkeley.edu/datasets/soar_release/). It is available in both [RLDS](https://rail.eecs.berkeley.edu/datasets/soar_release/1.0.0/) format and the [raw numpy](https://rail.eecs.berkeley.edu/datasets/soar_release/numpy_source/) source format.
 
-To load the dataset for training and other downstream use cases, we have provided a minimal example [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/rail-berkeley/soar/blob/main/soar_data/load_soar_data.ipynb) that loads the dataset and visualizes it.
+We also provide download scripts for both formats, check the `soar_data` directory for more details. In essence, you can download the dataset with:
+```bash
+bash soar_data/rlds/download_dataset.sh  # for RLDS format
+bash soar_data/numpy_source/download_dataset.sh  # for numpy source format
+```
+The RLDS format requires 136G of disk space and will take around 20 minutes to download if you use the parallel download option, so we recommend downloading inside a tmux session.
+
+To load the dataset for training and other downstream use cases, we have provided a minimal example [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://githubtocolab.com/rail-berkeley/soar/blob/main/soar_data/load_soar_data.ipynb) that loads the RLDS dataset and visualizes it.
 
 ## Installation
 ```bash
